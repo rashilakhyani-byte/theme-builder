@@ -1166,7 +1166,7 @@ select.control {
 .v3-delete:hover { background: #f9ddd3; }
 .v3-popup {
   position: fixed; z-index: 200; display: flex; flex-direction: column;
-  width: 344px; max-height: calc(100vh - 82px); overflow: hidden;
+  width: 344px; min-height: 320px; max-height: calc(100vh - 82px); overflow: hidden;
   background: var(--ui-step-up); border: 1px solid var(--ui-stroke-hover); border-radius: 14px;
   box-shadow: 0 20px 48px -16px rgba(25, 23, 21, .36);
   animation: v3-popup-in .2s var(--ui-ease) both;

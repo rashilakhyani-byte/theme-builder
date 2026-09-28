@@ -799,21 +799,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       { kind: 'text', path: 'panelTitle', label: 'Panel title', variants: ['split-banner'] },
       { kind: 'text', path: 'sub', label: 'Description', multiline: true },
       button('cta', 'Button'),
-      { kind: 'divider', label: 'App preview', variants: ['split-banner'] },
-      { kind: 'text', path: 'userName', label: 'User name', variants: ['split-banner'] },
-      { kind: 'text', path: 'balance', label: 'Balance', variants: ['split-banner'] },
-      {
-        kind: 'list', path: 'transactions', label: 'Transactions', itemTitle: 'name', addLabel: 'Add transaction', max: 3,
-        variants: ['split-banner'],
-        itemFields: [
-          { kind: 'icon', path: 'icon', label: 'Icon' },
-          { kind: 'text', path: 'name', label: 'Name' },
-          { kind: 'text', path: 'meta', label: 'Detail' },
-          { kind: 'text', path: 'amount', label: 'Amount' },
-          { kind: 'text', path: 'date', label: 'Date' },
-        ],
-        template: () => ({ icon: 'Receipt', name: 'Merchant', meta: 'Payment', amount: '$0.00', date: 'Today' }),
-      },
+      { kind: 'divider', label: 'Image', variants: ['split-banner'] },
+      { kind: 'image', path: 'image', label: 'Image', variants: ['split-banner'] },
       { kind: 'divider', label: 'Showcase', variants: ['showcase'] },
       {
         kind: 'list', path: 'steps', label: 'Steps', itemTitle: 'label', addLabel: 'Add step', max: 3,
@@ -828,6 +815,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       panelTitle: 'Built to Fuel Your Growth',
       sub: 'Explore the full API catalogue and see how our digital infrastructure can power your next project. Sign up to unlock specifications, interactive consoles and production keys.',
       cta: 'View API Reference',
+      image: '',
       userName: 'David',
       balance: '$41,379.00',
       transactions: [

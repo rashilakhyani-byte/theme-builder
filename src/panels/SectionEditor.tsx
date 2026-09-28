@@ -394,7 +394,7 @@ function PopupSectionEditor({
               ? 'Button'
               : groups[groupIndex]?.title ?? ''
   const popupTop = anchor
-    ? Math.max(12, Math.min(anchor.top, window.innerHeight - 180))
+    ? Math.max(12, Math.min(anchor.top, window.innerHeight - 332))
     : 12
 
   return (
@@ -468,7 +468,12 @@ function PopupSectionEditor({
             ) : null
           }
           if (
-            (section.type === 'hero' || section.type === 'marketplace' || section.type === 'whyChooseUs')
+            (
+              section.type === 'hero'
+              || section.type === 'marketplace'
+              || section.type === 'whyChooseUs'
+              || section.type === 'references'
+            )
             && group.title === 'Image'
           ) {
             const imageFields = group.fields.map((field) => (

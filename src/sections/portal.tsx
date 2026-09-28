@@ -1328,7 +1328,7 @@ export function References({ p, variant }: { p: P; variant: string }) {
         <div className="ref-banner-l surface surf-brand">
           <span className="ref-orb o1" /><span className="ref-orb o2" />
           <Ed path="title" as="h2" className="ref-banner-title" multiline />
-          <div className="ref-banner-phone"><Phone p={p} /></div>
+          <Img path="image" className="ref-banner-image" label="Reference image" />
         </div>
         <div className="ref-banner-r tint">
           <Ed path="panelTitle" as="h3" className="ref-panel-title" />
