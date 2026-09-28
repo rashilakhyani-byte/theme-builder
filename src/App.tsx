@@ -31,9 +31,15 @@ const VERSIONS: { id: BuilderVersion; name: string; tagline: string; desc: strin
     tagline: 'Onboarding & templates',
     desc: 'Start from a template or a blank canvas, then drag sections in from the side library.',
   },
+  {
+    id: 'v3',
+    name: 'Version 3',
+    tagline: 'Popup editor',
+    desc: 'A compact settings index opens each group in a focused popup, keeping the panel short.',
+  },
 ]
 
-/** Switches between the two iterations. Each keeps its own saved document. */
+/** Switches between iterations. Each keeps its own saved document. */
 function VersionMenu() {
   const version = useStore((s) => s.version)
   const started = useStore((s) => s.started)
@@ -74,7 +80,7 @@ function VersionMenu() {
               <span className="version-item-desc">{v.desc}</span>
             </button>
           ))}
-          {version === 'v2' && started && (
+          {version !== 'v1' && started && (
             <>
               <span className="menu-sep" />
               <button
@@ -173,9 +179,9 @@ function Builder({ onToast }: { onToast: (msg: string) => void }) {
   const started = useStore((s) => s.started)
   const [addAt, setAddAt] = useState<number | null>(null)
 
-  // v1 picks sections from a modal; v2 keeps the library in the side panel,
+  // v1 picks sections from a modal; v2/v3 keep the library in the side panel,
   // where it can be dragged onto the canvas.
-  const onAdd = (i: number) => (version === 'v2' ? actions.openLibrary(i) : setAddAt(i))
+  const onAdd = (i: number) => (version !== 'v1' ? actions.openLibrary(i) : setAddAt(i))
 
   return (
     <div className="builder">
@@ -187,7 +193,7 @@ function Builder({ onToast }: { onToast: (msg: string) => void }) {
       {addAt !== null && <AddSection index={addAt} onClose={() => setAddAt(null)} />}
       {/* First run: the builder is already behind it, so the choice reads as a
           starting point rather than a separate step. */}
-      {version === 'v2' && !started && <StartScreen />}
+      {version !== 'v1' && !started && <StartScreen />}
     </div>
   )
 }

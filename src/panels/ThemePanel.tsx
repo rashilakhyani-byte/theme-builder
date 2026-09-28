@@ -84,6 +84,25 @@ export function ThemePanel() {
 
   return (
     <div className="sect">
+      <div className="field-ui consumer-theme-control">
+        <div className="row-between">
+          <div className="consumer-theme-copy">
+            <label>Portal theme toggle</label>
+            <span className="hint">Allow visitors to switch between light and dark mode.</span>
+          </div>
+          <button
+            type="button"
+            className={`switch ${theme.consumerThemeToggle ? 'on' : ''}`}
+            role="switch"
+            aria-checked={!!theme.consumerThemeToggle}
+            aria-label="Allow visitors to switch between light and dark mode"
+            onClick={() => actions.setTheme({ consumerThemeToggle: !theme.consumerThemeToggle })}
+          >
+            <span />
+          </button>
+        </div>
+      </div>
+
       <div className="field-ui">
         <label htmlFor="brand-hex">Brand colour</label>
         <div className="field-row">

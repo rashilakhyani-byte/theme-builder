@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { Doc, Page, PageId, Section, Selection, SectionType, Surface } from './types'
+import type { Appearance, Doc, Page, PageId, Section, Selection, SectionType, Surface } from './types'
 import { REGISTRY, createSection, uid } from './registry'
 import { HOME_TYPES } from './registry.portal'
 
@@ -34,12 +34,13 @@ export function setAt<T>(obj: T, path: string, value: any): T {
 /* ---------------------------------------------------------- the default */
 
 /**
- * Two iterations of the builder live side by side so they can be compared:
+ * Three iterations of the builder live side by side so they can be compared:
  *   v1  the section catalogue — every page starts filled in
  *   v2  onboarding — pick a template or start from a blank canvas
+ *   v3  the v2 flow with compact popup-based section editing
  * Each keeps its own document, so switching between them loses no work.
  */
-export type BuilderVersion = 'v1' | 'v2'
+export type BuilderVersion = 'v1' | 'v2' | 'v3'
 
 // v5: the home catalogue was rebuilt from the Figma layouts; older documents
 // reference section types that no longer exist.
@@ -115,6 +116,8 @@ export function defaultDoc(): Doc {
 
 interface State {
   doc: Doc
+  /** The visitor's current published-site mode. This is not part of the editable document. */
+  consumerAppearance: Appearance
   /**
    * 'portal' is the developer portal an admin browses; 'builder' is the
    * customise surface, reached from the Customise tab in the rail. Entering
@@ -133,9 +136,9 @@ interface State {
   panel: 'root' | 'theme' | 'typography'
   /** Which iteration of the builder is running. */
   version: BuilderVersion
-  /** v2 only: false until a template or a blank canvas has been chosen. */
+  /** v2/v3: false until a template or a blank canvas has been chosen. */
   started: boolean
-  /** v2 only: the open section library, and where a click would insert. */
+  /** v2/v3: the open section library, and where a click would insert. */
   library: { at: number } | null
   selection: Selection | null
   /** Which tab of the left panel is showing: the current page, or the global
@@ -156,12 +159,23 @@ interface State {
 }
 
 const initialVersion = loadVersion()
+const initialDoc = load(initialVersion) ?? defaultDoc()
+
+function loadConsumerAppearance(fallback: Appearance): Appearance {
+  try {
+    const saved = localStorage.getItem('builder-consumer-appearance')
+    return saved === 'light' || saved === 'dark' ? saved : fallback
+  } catch {
+    return fallback
+  }
+}
 
 let state: State = {
   version: initialVersion,
   started: isStarted(initialVersion),
   library: null,
-  doc: load(initialVersion) ?? defaultDoc(),
+  doc: initialDoc,
+  consumerAppearance: loadConsumerAppearance(initialDoc.theme.appearance),
   appMode: 'portal',
   navOpen: true,
   railId: 'references',
@@ -201,7 +215,8 @@ export const getState = () => state
 
 function loadVersion(): BuilderVersion {
   try {
-    return localStorage.getItem(VERSION_KEY) === 'v2' ? 'v2' : 'v1'
+    const saved = localStorage.getItem(VERSION_KEY)
+    return saved === 'v2' || saved === 'v3' ? saved : 'v1'
   } catch {
     return 'v1'
   }
@@ -376,11 +391,13 @@ export const actions = {
     } catch {
       /* private mode — the switch still applies for this session */
     }
+    const doc = load(version) ?? defaultDoc()
     state = {
       ...state,
       version,
       started: isStarted(version),
-      doc: load(version) ?? defaultDoc(),
+      doc,
+      consumerAppearance: loadConsumerAppearance(doc.theme.appearance),
       past: [],
       future: [],
       pageId: 'home',
@@ -458,6 +475,17 @@ export const actions = {
     lastEditKey = key
     lastEditAt = Date.now()
     commit({ ...state.doc, theme: { ...state.doc.theme, ...partial } }, { merge })
+  },
+
+  toggleConsumerAppearance() {
+    if (!state.doc.theme.consumerThemeToggle) return
+    const consumerAppearance: Appearance = state.consumerAppearance === 'light' ? 'dark' : 'light'
+    try {
+      localStorage.setItem('builder-consumer-appearance', consumerAppearance)
+    } catch {
+      /* private mode — keep the choice for this session */
+    }
+    patch({ consumerAppearance })
   },
 
   /** Edit one field inside a section. Rapid edits to the same field merge. */

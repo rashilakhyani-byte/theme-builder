@@ -7,6 +7,7 @@ import { SectionProvider } from './Bits'
 import { Icon } from '../ui/Icon'
 import { Ph_ } from '../ui/Phosphor'
 import { SECTION_DND } from './dnd'
+import { paletteTokens } from '../theme/palette'
 
 const WIDTHS = { compact: 960, default: 1120, wide: 1280 }
 
@@ -210,6 +211,7 @@ function Inserter({
 
 export function Canvas({ onAdd }: { onAdd: (index: number) => void }) {
   const doc = useStore((s) => s.doc)
+  const consumerAppearance = useStore((s) => s.consumerAppearance)
   const page = useStore(currentPage)
   const device = useStore((s) => s.device)
   const preview = useStore((s) => s.preview)
@@ -222,11 +224,15 @@ export function Canvas({ onAdd }: { onAdd: (index: number) => void }) {
   const style = useMemo(
     () =>
       ({
+        ...paletteTokens(
+          doc.theme.accent,
+          doc.theme.consumerThemeToggle ? consumerAppearance : doc.theme.appearance,
+        ),
         '--radius': `${doc.theme.radius}px`,
         '--maxw': `${WIDTHS[doc.theme.width]}px`,
         '--fs': String(doc.theme.fontScale),
       }) as React.CSSProperties,
-    [doc.theme.radius, doc.theme.width, doc.theme.fontScale],
+    [doc.theme.accent, doc.theme.appearance, doc.theme.consumerThemeToggle, consumerAppearance, doc.theme.radius, doc.theme.width, doc.theme.fontScale],
   )
 
   return (
@@ -237,7 +243,7 @@ export function Canvas({ onAdd }: { onAdd: (index: number) => void }) {
       <div className={`frame ${device}`}>
         <div
           className={`site ${preview ? '' : 'editing-on'}`}
-          data-appearance={doc.theme.appearance}
+          data-appearance={doc.theme.consumerThemeToggle ? consumerAppearance : doc.theme.appearance}
           data-chrome={doc.theme.chrome}
           style={style}
         >

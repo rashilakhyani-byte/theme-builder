@@ -45,6 +45,8 @@ export interface Page {
 export interface Theme {
   /** The one colour the admin picks. Everything else is derived from it. */
   accent: string
+  /** Let visitors override the creator-selected appearance on the published site. */
+  consumerThemeToggle?: boolean
   appearance: Appearance
   chrome: Chrome
   radius: number

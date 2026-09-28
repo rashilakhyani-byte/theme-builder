@@ -248,9 +248,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     icon: 'Medal',
     defaultSurface: 'page',
     variants: [
-      { id: 'spotlight', label: 'Spotlight with award list', surface: 'page' },
+      { id: 'spotlight', label: 'Award list', surface: 'page' },
       { id: 'cards', label: 'Highlight cards', surface: 'muted' },
-      { id: 'table', label: 'Cards with award table', surface: 'page' },
+      { id: 'table', label: 'Award table', surface: 'page' },
     ],
     fields: [
       { ...eyebrow[0], variants: ['cards', 'table'] },

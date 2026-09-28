@@ -107,6 +107,13 @@
 .uc-mark img { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
 .pnav-links .navlink { color: var(--fg); opacity: .9; font-weight: 450; }
 .pnav-actions { display: flex; align-items: center; justify-content: flex-end; gap: 22px; }
+.pnav-theme-toggle {
+  display: grid; place-items: center; flex: none; width: 34px; height: 34px; padding: 0;
+  color: var(--fg); background: transparent; border: 1px solid var(--border); border-radius: 999px;
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.pnav-theme-toggle:hover { background: var(--surface-muted); border-color: var(--fg-subtle); }
+.pnav-theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pnav-login { color: var(--fg); font-weight: 500; }
 .pnav-item,
 .pnav-dropdown { position: relative; }

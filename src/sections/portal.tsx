@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Btn, Ed, Ico, Img, Pick, useSection } from '../canvas/Bits'
 import { Ph_ } from '../ui/Phosphor'
+import { actions, useStore } from '../store'
 
 /* ==========================================================================
    DEVELOPER PORTAL SECTIONS — every layout from the Figma
@@ -100,6 +101,8 @@ const Skel = ({ w = 60, className = '' }: { w?: number | string; className?: str
 
 export function PortalNav({ p }: { p: P }) {
   const { editing, interactive = true } = useSection()
+  const theme = useStore((s) => s.doc.theme)
+  const consumerAppearance = useStore((s) => s.consumerAppearance)
   const [open, setOpen] = useState<number | null>(null)
   const restricted = (item: any) => item?.visibility && item.visibility !== 'everyone'
   const accessTitle = (item: any) => {
@@ -192,6 +195,20 @@ export function PortalNav({ p }: { p: P }) {
         })}
       </nav>
       <div className="pnav-actions">
+        {theme.consumerThemeToggle && (
+          <button
+            type="button"
+            className="pnav-theme-toggle"
+            title={`Switch to ${consumerAppearance === 'light' ? 'dark' : 'light'} mode`}
+            aria-label={`Switch to ${consumerAppearance === 'light' ? 'dark' : 'light'} mode`}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (interactive) actions.toggleConsumerAppearance()
+            }}
+          >
+            <Ph_ name={consumerAppearance === 'light' ? 'Moon' : 'Sun'} size={17} />
+          </button>
+        )}
         {p.showSecondary && (
           <a
             className="pnav-action-link"
