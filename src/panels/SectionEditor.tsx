@@ -283,6 +283,10 @@ function PopupSectionEditor({
   const def = REGISTRY[section.type]
   const isNavigation = section.type === 'nav'
   const groups = useMemo(() => sourceGroups.flatMap((group) => {
+    if (section.type === 'awards' && group.title === 'Awards') {
+      const list = group.fields.find((field) => field.kind === 'list')
+      return list ? [{ ...group, fields: [list, ...group.fields.filter((field) => field !== list)] }] : [group]
+    }
     if (section.type === 'contact' && group.title === 'Form') {
       const fieldListIndex = group.fields.findIndex((field) => field.kind === 'list' && field.path === 'fields')
       if (fieldListIndex >= 0) {
@@ -389,6 +393,9 @@ function PopupSectionEditor({
             : groups[groupIndex]?.title === 'Form button'
               ? 'Button'
               : groups[groupIndex]?.title ?? ''
+  const popupTop = anchor
+    ? Math.max(12, Math.min(anchor.top, window.innerHeight - 180))
+    : 12
 
   return (
     <div className="v3-editor" ref={editorRef}>
@@ -406,6 +413,19 @@ function PopupSectionEditor({
           const list = group.fields.length === 1 && group.fields[0].kind === 'list'
             ? group.fields[0]
             : null
+          if (section.type === 'awards' && group.title === 'Awards' && group.fields[0]?.kind === 'list') {
+            return (
+              <V3ListGroup
+                key={`${group.title}-${index}`}
+                section={section}
+                group={group}
+                groupIndex={index}
+                field={group.fields[0]}
+                leadingFields={group.fields.slice(1)}
+                openPopup={openPopup}
+              />
+            )
+          }
           if (section.type === 'featuredApis' && list?.path === 'apis') return null
           if (section.type === 'featuredApis' && list?.path === 'categories') {
             const apiGroupIndex = groups.findIndex((candidate) => (
@@ -447,10 +467,39 @@ function PopupSectionEditor({
               />
             ) : null
           }
+          if (
+            (section.type === 'hero' || section.type === 'marketplace' || section.type === 'whyChooseUs')
+            && group.title === 'Image'
+          ) {
+            const imageFields = group.fields.map((field) => (
+              field.kind === 'image' ? { ...field, label: '' } : field
+            ))
+            return (
+              <V3InlineGroup key={`${group.title}-${index}`} title="Image">
+                <FieldList sectionId={section.id} fields={imageFields} />
+              </V3InlineGroup>
+            )
+          }
+          if (isNavigation && group.title === 'Content') {
+            const logoFields = group.fields
+              .filter((field) => field.kind === 'image')
+              .map((field) => ({ ...field, label: '' }))
+            return (
+              <div className="v3-inline-group has-section-divider" key={`${group.title}-${index}`}>
+                <div className="v3-inline-title">Logo</div>
+                <div className="v3-inline-body">
+                  <FieldList sectionId={section.id} fields={logoFields} />
+                </div>
+              </div>
+            )
+          }
           if (group.title === 'Content') {
             const key: PopupKey = `group-${index}`
             return (
-              <div className="v3-inline-group" key={`${group.title}-${index}`}>
+              <div
+                className={`v3-inline-group ${isNavigation || section.type === 'awards' ? 'has-section-divider' : ''}`}
+                key={`${group.title}-${index}`}
+              >
                 <div className="v3-inline-title">{group.title}</div>
                 <button
                   className="v3-content-card"
@@ -516,8 +565,8 @@ function PopupSectionEditor({
           aria-label={`Edit ${popupTitle}`}
           style={{
             left: Math.min(anchor.right + 10, window.innerWidth - 354),
-            top: 66,
-            maxHeight: window.innerHeight - 78,
+            top: popupTop,
+            maxHeight: window.innerHeight - popupTop - 12,
           }}
         >
             <div className="v3-popup-head">
@@ -899,7 +948,7 @@ function V3ActionGroup({
           const fieldIndex = group.fields.indexOf(field)
           const key: PopupKey = `action-${groupIndex}-${fieldIndex}`
           const rawEnabled = (section.props as any)[field.path]
-          const enabled = section.type === 'contact' && field.path === 'showCta'
+          const enabled = (section.type === 'contact' || section.type === 'gettingStarted') && field.path === 'showCta'
             ? rawEnabled !== false
             : Boolean(rawEnabled)
           const label = togglePopupLabel(section.type, field)
@@ -956,12 +1005,14 @@ function V3ListGroup({
   group,
   groupIndex,
   field,
+  leadingFields,
   openPopup,
 }: {
   section: Section
   group: EditorGroup
   groupIndex: number
   field: Extract<Field, { kind: 'list' }>
+  leadingFields?: Field[]
   openPopup: (key: PopupKey, target?: HTMLElement | null) => void
 }) {
   const items = ((section.props as any)[field.path] ?? []) as any[]
@@ -990,6 +1041,11 @@ function V3ListGroup({
           <Ph_ name="Plus" size={16} />
         </button>
       </div>
+      {!!leadingFields?.length && (
+        <div className="v3-list-leading-fields">
+          <FieldList sectionId={section.id} fields={leadingFields} />
+        </div>
+      )}
       {items.map((item, index) => {
         const key: PopupKey = `item-${groupIndex}-${index}`
         const title = String(item?.[field.itemTitle] ?? '') || `Item ${index + 1}`

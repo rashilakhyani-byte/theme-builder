@@ -129,7 +129,6 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     defaultSurface: 'muted',
     variants: [{ id: 'portal', label: 'Centered links' }],
     fields: [
-      { kind: 'text', path: 'logoText', label: 'Brand name' },
       { kind: 'image', path: 'logoImage', label: 'Logo' },
       { kind: 'divider', label: 'Links' },
       {
@@ -211,9 +210,6 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       { kind: 'divider', label: 'Buttons' },
       optionalButton('showPrimary', 'primaryCta', 'Primary button'),
       optionalButton('showSecondary', 'secondaryCta', 'Secondary button'),
-      { kind: 'divider', label: 'Artwork' },
-      { kind: 'image', path: 'image', label: 'Image' },
-      { kind: 'text', path: 'productName', label: 'Product name in the artwork' },
       { kind: 'divider', label: 'Logos' },
       {
         kind: 'toggle', path: 'showLogos', label: 'Partner logos',
@@ -222,6 +218,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
           logoList('logos', 'Logos'),
         ],
       },
+      { kind: 'divider', label: 'Image' },
+      { kind: 'image', path: 'image', label: 'Image' },
     ],
     defaults: () => ({
       showEyebrow: true,
@@ -258,7 +256,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       { kind: 'text', path: 'sub', label: 'Description', multiline: true },
       { kind: 'image', path: 'image', label: 'Image (spotlight)', variants: ['spotlight'] },
       { ...logoList('logos', 'Publication logos'), variants: ['spotlight', 'table'] },
-      { kind: 'divider', label: 'Award list', variants: ['spotlight', 'table'] },
+      { kind: 'divider', label: 'Awards', variants: ['spotlight', 'table'] },
       { kind: 'text', path: 'listTitle', label: 'List title', variants: ['spotlight', 'table'] },
       {
         kind: 'list', path: 'awards', label: 'Awards', itemTitle: 'name', addLabel: 'Add award',
@@ -351,12 +349,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
           { kind: 'text', path: 'cta', label: 'Link label' },
           { kind: 'text', path: 'href', label: 'Link', placeholder: 'https:// or /path' },
           { kind: 'text', path: 'endpoints', label: 'Endpoints (one per line: METHOD /path)', multiline: true },
+          { kind: 'image', path: 'image', label: 'Image' },
         ],
-        template: () => ({ category: 'Payments API', name: 'New API', desc: 'Describe what this API does.', cta: 'View API reference', endpoints: 'GET /v1/resource' }),
+        template: () => ({ category: 'Payments API', name: 'New API', desc: 'Describe what this API does.', cta: 'View API reference', endpoints: 'GET /v1/resource', image: '' }),
       },
-      { kind: 'divider', label: 'Usage badge' },
-      { kind: 'text', path: 'usedByLabel', label: 'Label' },
-      { kind: 'text', path: 'usedByCount', label: 'Count' },
     ],
     defaults: () => ({
       showEyebrow: true,
@@ -377,8 +373,6 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         { category: 'Payments API', name: 'Bulk Payroll Transfer', desc: 'Pay hundreds of employees in one batch with per-line validation, partial retries and reconciliation files.', cta: 'View API reference', endpoints: 'POST /payroll/batches\nGET /payroll/batches/{batchId}' },
         { category: 'Payments API', name: 'View Payment History', desc: 'Query every payment by status, date or counterparty with cursor pagination and exportable statements.', cta: 'View API reference', endpoints: 'GET /payments\nGET /payments/{paymentId}' },
       ],
-      usedByLabel: 'Used by',
-      usedByCount: '+1K developers',
     }),
   },
 
@@ -404,11 +398,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ icon: 'Cube', title: 'New feature', body: 'Describe the feature.' }),
       },
-      { kind: 'divider', label: 'Try-out panel' },
-      { kind: 'text', path: 'language', label: 'Language label' },
-      { kind: 'text', path: 'requestCode', label: 'Request', multiline: true },
-      { kind: 'text', path: 'responseStatus', label: 'Response status' },
-      { kind: 'text', path: 'responseCode', label: 'Response', multiline: true },
+      { kind: 'divider', label: 'Image' },
+      { kind: 'image', path: 'image', label: 'Image' },
     ],
     defaults: () => ({
       showEyebrow: true,
@@ -422,6 +413,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         { icon: 'Package', title: 'Ready-to-use SDKs', body: 'Spend less time on boilerplate and more time on core features.' },
         { icon: 'Flask', title: 'Integration Recipes', body: 'Follow ready-made integration examples that help you implement APIs faster.' },
       ],
+      image: '',
       language: 'cURL',
       requestCode: 'curl -X POST "https://api.northwind.dev/v1/transfers" \\\n  -H "Authorization: Bearer <ACCESS_TOKEN>" \\\n  -H "Content-Type: application/json" \\\n  --data \'{\n    "amount": 2509,\n    "currency": "USD",\n    "counterparty_id": "cpa_6f6c8a7b0a6d",\n    "description": "Order #78421",\n    "speed": "standard"\n  }\'',
       responseStatus: '200 OK',
@@ -443,7 +435,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     ],
     fields: [
       ...heading,
-      button('cta', 'Button'),
+      { kind: 'divider', label: 'Buttons' },
+      optionalButton('showCta', 'cta', 'Primary button'),
       {
         kind: 'list', path: 'steps', label: 'Steps', itemTitle: 'title', addLabel: 'Add step', max: 4,
         itemFields: [
@@ -462,7 +455,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       eyebrow: 'Getting Started',
       title: 'Get Started with the Developer Portal',
       sub: 'A guided onboarding flow designed to get you from account creation to your first production transaction with zero friction.',
+      showCta: true,
       cta: 'Explore',
+      ctaHref: '#',
       steps: [
         { icon: 'FileArrowUp', title: 'Discover', tagline: 'Browse the API catalogue', short: 'Create your developer account in under 2 minutes.', body: 'Create your developer account to unlock the full marketplace. Set up your workspace to manage applications, team members and credentials in one place.', badge: 'Self service' },
         { icon: 'Binoculars', title: 'Sandbox', tagline: 'Build & test freely', short: 'Use the interactive sandbox to simulate real banking flows.', body: 'Get instant sandbox credentials on registration. Simulate transfers, QR payments and KYC flows with mock data in a fully isolated environment.', badge: 'Self service' },
@@ -542,9 +537,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ icon: 'Wrench', title: 'New reason', body: 'Describe the reason.' }),
       },
-      { kind: 'divider', label: 'Cards around artwork', variants: ['illustrated'] },
-      { kind: 'image', path: 'image', label: 'Illustration', variants: ['illustrated'] },
+      { kind: 'divider', label: 'Buttons', variants: ['illustrated'] },
       { ...button('cta', 'Button'), variants: ['illustrated'] },
+      { kind: 'divider', label: 'Image', variants: ['illustrated'] },
+      { kind: 'image', path: 'image', label: 'Illustration', variants: ['illustrated'] },
       { kind: 'divider', label: 'Bento grid', variants: ['bento'] },
       {
         kind: 'list', path: 'statements', label: 'Statements', itemTitle: 'text', addLabel: 'Add statement', max: 5,

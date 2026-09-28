@@ -46,22 +46,6 @@ function Logo({ base, it, className = '' }: { base: string; it: any; className?:
   )
 }
 
-function UsedBy() {
-  return (
-    <div className="usedby">
-      <span className="usedby-avs">
-        {['AK', 'JM', 'RS', 'LT', 'MP'].map((x, i) => (
-          <span key={x} className="usedby-av" style={{ '--i': i } as React.CSSProperties}>{x}</span>
-        ))}
-      </span>
-      <span className="usedby-text">
-        <Ed path="usedByLabel" />
-        <Ed path="usedByCount" className="usedby-count" />
-      </span>
-    </div>
-  )
-}
-
 function Arrows({ count = 3, active = 1 }: { count?: number; active?: number }) {
   return (
     <div className="parrows" aria-hidden="true">
@@ -606,7 +590,6 @@ function ApiCard({ i }: { i: number }) {
     <div className="api-card">
       <div className="api-band surface surf-brand">
         <span className="band-lines" aria-hidden="true" />
-        <UsedBy />
       </div>
       <div className="api-body">
         <Ed path={`apis[${i}].category`} className="api-cat" />
@@ -659,7 +642,6 @@ function EndpointCard({ p, i }: { p: P; i: number }) {
             )
           })}
         </div>
-        <UsedBy />
       </div>
     </div>
   )
@@ -722,35 +704,6 @@ export function FeaturedApis({ p, variant }: { p: P; variant: string }) {
 
 /* ============================================================ marketplace */
 
-function TryOut({ p }: { p: P }) {
-  return (
-    <div className="tryout">
-      <div className="tryout-h">
-        <span>Try it out</span>
-        <span className="tryout-icons"><Ph_ name="Copy" size={15} /><Ph_ name="DownloadSimple" size={15} /></span>
-      </div>
-      <div className="tryout-block">
-        <div className="tryout-bh">
-          <span>Request</span>
-          <span className="tryout-tools">
-            <span className="tryout-select"><Ed path="language" /> <Ph_ name="CaretDown" size={11} /></span>
-            <Ph_ name="Copy" size={14} />
-            <span className="tryout-run"><Ph_ name="Play" size={11} weight="fill" /></span>
-          </span>
-        </div>
-        <Code text={p.requestCode} path="requestCode" />
-      </div>
-      <div className="tryout-block">
-        <div className="tryout-bh">
-          <span>Response</span>
-          <span className="tryout-status"><i /> <Ed path="responseStatus" /> <Ph_ name="CaretDown" size={11} /></span>
-        </div>
-        <Code text={p.responseCode} path="responseCode" />
-      </div>
-    </div>
-  )
-}
-
 export function Marketplace({ p, variant }: { p: P; variant: string }) {
   const { interactive = true } = useSection()
   const [active, setActive] = useState(0)
@@ -786,7 +739,7 @@ export function Marketplace({ p, variant }: { p: P; variant: string }) {
           </div>
           <div className="mk-deck">
             <span className="mk-deck-back b3" /><span className="mk-deck-back b2" /><span className="mk-deck-back b1" />
-            <div className="mk-deck-front"><TryOut p={p} /></div>
+            <div className="mk-deck-front"><Img path="image" className="mk-panel-image" label="Marketplace image" /></div>
           </div>
         </div>
       </div>
@@ -808,7 +761,7 @@ export function Marketplace({ p, variant }: { p: P; variant: string }) {
             </div>
           ))}
         </div>
-        <div className="mk-stage surface surf-brand"><TryOut p={p} /></div>
+        <div className="mk-stage surface surf-brand"><Img path="image" className="mk-panel-image" label="Marketplace image" /></div>
       </div>
     </div>
   )
@@ -921,7 +874,7 @@ export function GettingStarted({ p, variant }: { p: P; variant: string }) {
         <div className="gs-split">
           <div className="gs-split-l">
             <Head p={p} center={false} className="tight" />
-            <Ed path="cta" as="button" className="btn btn-primary gs-cta" />
+            {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-primary gs-cta" />}
             <div className="gs-list">
               {steps.map((_, k) => (
                 <div key={k} className={`gs-item ${k === i ? 'on' : ''}`} onClick={() => setActive(k)}>
@@ -951,7 +904,7 @@ export function GettingStarted({ p, variant }: { p: P; variant: string }) {
     return (
       <div className="container pad">
         <Head p={p} center={false} className="tight" />
-        <Ed path="cta" as="button" className="btn btn-ghost gs-cta" />
+        {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-ghost gs-cta" />}
         <div className="gs-grid">
           {steps.slice(0, 4).map((_, i) => (
             <div className="gs-cell" key={i}>
@@ -970,7 +923,7 @@ export function GettingStarted({ p, variant }: { p: P; variant: string }) {
     <div className="container pad">
       <Head p={p} center={false} className="tight" />
       <span className="gs-cta-wrap">
-        <Ed path="cta" as="button" className="btn btn-ghost gs-cta" />
+        {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-ghost gs-cta" />}
       </span>
       <div className="gs-cards">
         {steps.slice(0, 4).map((_, i) => (
