@@ -5,7 +5,7 @@ import type { Field, Section, Surface } from '../types'
 import type { GeneratedPalette as Palette } from '../theme/palette'
 import { buildPalette } from '../theme/palette'
 import { Icon } from '../ui/Icon'
-import { ICON_SUGGESTIONS, Ph_ } from '../ui/Phosphor'
+import { PHOSPHOR_NAMES, Ph_ } from '../ui/Phosphor'
 import { FieldList } from './Fields'
 import { SectionPreview } from './SectionPreview'
 import { useDismiss } from '../ui/useDismiss'
@@ -605,6 +605,7 @@ function ContactFormFieldEditor({
   fields: Field[]
 }) {
   const [iconsOpen, setIconsOpen] = useState(false)
+  const [iconQuery, setIconQuery] = useState('')
   const [iconAnchor, setIconAnchor] = useState<DOMRect | null>(null)
   const [parentPopupRect, setParentPopupRect] = useState<DOMRect | null>(null)
   const iconPickerRef = useRef<HTMLDivElement>(null)
@@ -625,6 +626,10 @@ function ContactFormFieldEditor({
     'path' in field && field.path !== 'label' && field.path !== 'placeholder' && field.path !== 'icon'
   ))
   const icon = String(item?.icon ?? 'TextT')
+  const matchingIcons = useMemo(() => {
+    const query = iconQuery.trim().toLowerCase()
+    return query ? PHOSPHOR_NAMES.filter((name) => name.toLowerCase().includes(query)) : PHOSPHOR_NAMES
+  }, [iconQuery])
 
   return (
     <div className="v3-contact-field-editor">
@@ -655,14 +660,28 @@ function ContactFormFieldEditor({
                 aria-label="Placeholder icon"
                 style={{
                   left: parentPopupRect
-                    ? (parentPopupRect.right + 254 <= window.innerWidth
+                    ? (parentPopupRect.right + 322 <= window.innerWidth
                         ? parentPopupRect.right + 10
-                        : Math.max(10, parentPopupRect.left - 254))
-                    : Math.min(iconAnchor.left, window.innerWidth - 254),
-                  top: Math.min(iconAnchor.top, window.innerHeight - 214),
+                        : Math.max(10, parentPopupRect.left - 322))
+                    : Math.min(iconAnchor.left, window.innerWidth - 322),
+                  top: Math.min(iconAnchor.top, window.innerHeight - 330),
                 }}
               >
-                {ICON_SUGGESTIONS.map((name) => (
+                <div className="v3-inline-icon-search">
+                  <Ph_ name="MagnifyingGlass" size={15} />
+                  <input
+                    autoFocus
+                    value={iconQuery}
+                    placeholder={`Search ${PHOSPHOR_NAMES.length} icons`}
+                    onChange={(event) => setIconQuery(event.target.value)}
+                  />
+                  {iconQuery && (
+                    <button type="button" aria-label="Clear icon search" onClick={() => setIconQuery('')}>
+                      <Ph_ name="X" size={13} />
+                    </button>
+                  )}
+                </div>
+                {matchingIcons.map((name) => (
                   <button
                     type="button"
                     role="option"
@@ -678,6 +697,7 @@ function ContactFormFieldEditor({
                     <Ph_ name={name} size={17} />
                   </button>
                 ))}
+                {!matchingIcons.length && <div className="v3-inline-icon-empty">No icons found</div>}
               </div>,
               document.querySelector('.app-root') ?? document.body,
             )}
