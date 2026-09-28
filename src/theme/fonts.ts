@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type { Theme } from '../types'
 
 /**
  * The typefaces the admin can pick for the published portal. Two roles:
@@ -46,7 +47,8 @@ const SERIF = 'ui-serif, Georgia, serif'
 /** A CSS font-family value with a fallback that matches the face's genre. */
 export function fontStack(family: string = DEFAULT_FONT): string {
   const def = FONTS.find((f) => f.family === family)
-  if (!def || !def.google) return SANS
+  if (!def) return `"${family}", ${SANS}`
+  if (!def.google) return SANS
   return `"${family}", ${def.kind === 'Serif' ? SERIF : SANS}`
 }
 
@@ -68,5 +70,17 @@ export function useFonts(families: string[]) {
   const key = families.join('|')
   useEffect(() => {
     key.split('|').forEach(loadFont)
+  }, [key])
+}
+
+/** Register creator-uploaded fonts on load as well as immediately after upload. */
+export function useCustomFonts(fonts: Theme['customFonts']) {
+  const key = (fonts ?? []).map((font) => `${font.family}:${font.dataUrl.length}`).join('|')
+  useEffect(() => {
+    if (typeof FontFace === 'undefined') return
+    ;(fonts ?? []).forEach((font) => {
+      const face = new FontFace(font.family, `url(${font.dataUrl})`)
+      face.load().then((loaded) => document.fonts.add(loaded)).catch(() => undefined)
+    })
   }, [key])
 }

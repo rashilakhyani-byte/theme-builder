@@ -18,6 +18,11 @@ export function getAt(obj: any, path: string): any {
   return parsePath(path).reduce((acc, k) => (acc == null ? acc : acc[k as any]), obj)
 }
 
+/** Store the dark-mode companion beside the original image property. */
+export function darkImagePath(path: string): string {
+  return path.replace(/([^.[\]]+)$/, '$1Dark')
+}
+
 /** Immutable set. Clones only the nodes along the path. */
 export function setAt<T>(obj: T, path: string, value: any): T {
   const keys = parsePath(path)
@@ -520,6 +525,11 @@ export const actions = {
   setSectionHidden(sectionId: string, hidden: boolean) {
     lastEditKey = ''
     commit(replaceSection(state.doc, sectionId, (s) => ({ ...s, hidden })))
+  },
+
+  renameSection(sectionId: string, name: string) {
+    lastEditKey = ''
+    commit(replaceSection(state.doc, sectionId, (s) => ({ ...s, name: name.trim() || undefined })))
   },
 
   addListItem(sectionId: string, path: string, item: any) {

@@ -22,6 +22,8 @@ export type SectionType =
 
 export interface Section {
   id: string
+  /** Optional creator-defined name used by the builder's section list. */
+  name?: string
   type: SectionType
   variant: string
   surface: Surface
@@ -56,6 +58,8 @@ export interface Theme {
   fontPrimary?: string
   /** Body and interface text. */
   fontSecondary?: string
+  /** Font files uploaded by the creator and embedded in the saved portal. */
+  customFonts?: { family: string; dataUrl: string }[]
 }
 
 export interface Doc {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Btn, Ed, Ico, Img, Pick, useSection } from '../canvas/Bits'
+import { Btn, Ed, Ico, Img, Pick, useSection, useThemeImage } from '../canvas/Bits'
 import { Ph_ } from '../ui/Phosphor'
 import { actions, useStore } from '../store'
 
@@ -30,10 +30,11 @@ function Head({ p, center = true, className = '' }: { p: P; center?: boolean; cl
 
 /** A partner or publication mark: the uploaded logo, or a themed wordmark. */
 function Logo({ base, it, className = '' }: { base: string; it: any; className?: string }) {
-  if (it?.image) {
+  const image = useThemeImage(`${base}.image`)
+  if (image) {
     return (
       <Pick path={`${base}.image`} className={`plogo plogo-has-img ${className}`}>
-        <img src={it.image} alt={it.name ?? ''} />
+        <img src={image} alt={it.name ?? ''} />
       </Pick>
     )
   }
@@ -103,6 +104,7 @@ export function PortalNav({ p }: { p: P }) {
   const { editing, interactive = true } = useSection()
   const theme = useStore((s) => s.doc.theme)
   const consumerAppearance = useStore((s) => s.consumerAppearance)
+  const logoImage = useThemeImage('logoImage')
   const [open, setOpen] = useState<number | null>(null)
   const restricted = (item: any) => item?.visibility && item.visibility !== 'everyone'
   const accessTitle = (item: any) => {
@@ -121,9 +123,9 @@ export function PortalNav({ p }: { p: P }) {
 
   return (
     <div className="container pnav">
-      {p.logoImage ? (
+      {logoImage ? (
         <Pick path="logoImage" className="brand">
-          <img src={p.logoImage} alt={p.logoText ?? ''} className="brand-logo" />
+          <img src={logoImage} alt={p.logoText ?? ''} className="brand-logo" />
         </Pick>
       ) : (
         <Pick path="logoImage" className="brand" as="div">
@@ -429,10 +431,11 @@ function AwardsTable({ p, max }: { p: P; max?: number }) {
 }
 
 function Medal({ p }: { p: P }) {
+  const image = useThemeImage('image')
   return (
     <Pick path="image" className="aw-medal">
-      {p.image ? (
-        <img src={p.image} alt="" />
+      {image ? (
+        <img src={image} alt="" />
       ) : (
         <>
           <Ph_ name="Sparkle" size={30} weight="fill" className="aw-spark s1" />
@@ -1095,6 +1098,7 @@ function WhyCard({ i, className = '' }: { i: number; className?: string }) {
 
 export function WhyChooseUs({ p, variant }: { p: P; variant: string }) {
   const [active, setActive] = useState(0)
+  const logoImage = useThemeImage('logoImage')
 
   if (variant === 'bento') {
     const items = arr(p.items)
@@ -1140,7 +1144,7 @@ export function WhyChooseUs({ p, variant }: { p: P; variant: string }) {
         </div>
         <div className="uc-stats soft">
           <Pick path="logoImage" className="uc-mark">
-            {p.logoImage ? <img src={p.logoImage} alt="" /> : <Ph_ name={p.logoIcon ?? 'Sparkle'} size={34} weight="fill" />}
+            {logoImage ? <img src={logoImage} alt="" /> : <Ph_ name={p.logoIcon ?? 'Sparkle'} size={34} weight="fill" />}
           </Pick>
           <div className="uc-stats-copy">
             <Ed path="statsTitle" as="div" className="uc-stats-title" />

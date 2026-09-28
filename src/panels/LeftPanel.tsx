@@ -144,6 +144,23 @@ function LayerRow({
 }) {
   const selected = useStore((s) => s.selection?.sectionId === section.id)
   const def = REGISTRY[section.type]
+  const displayName = section.name || def.label
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [draftName, setDraftName] = useState(displayName)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+  useDismiss(menuOpen, menuRef, () => setMenuOpen(false))
+  useEffect(() => {
+    if (!renaming) return
+    nameRef.current?.focus()
+    nameRef.current?.select()
+  }, [renaming])
+
+  const saveName = () => {
+    actions.renameSection(section.id, draftName)
+    setRenaming(false)
+  }
 
   const dragging = dragState?.id === section.id
   const over = dragState?.over === section.id
@@ -161,7 +178,7 @@ function LayerRow({
       className={cls}
       role="button"
       tabIndex={0}
-      draggable={!pinned && !!setDragState}
+      draggable={!pinned && !!setDragState && !renaming && !menuOpen}
       onDragStart={() => setDragState?.({ id: section.id, over: null, edge: 'top' })}
       onDragEnd={() => setDragState?.({ id: null, over: null, edge: 'top' })}
       onDragOver={(e) => {
@@ -191,8 +208,8 @@ function LayerRow({
       {pinned ? (
         <button
           className="layer-eye"
-          title={`${section.hidden ? 'Show' : 'Hide'} ${def.label}`}
-          aria-label={`${section.hidden ? 'Show' : 'Hide'} ${def.label}`}
+          title={`${section.hidden ? 'Show' : 'Hide'} ${displayName}`}
+          aria-label={`${section.hidden ? 'Show' : 'Hide'} ${displayName}`}
           onClick={(e) => {
             e.stopPropagation()
             actions.setSectionHidden(section.id, !section.hidden)
@@ -209,19 +226,67 @@ function LayerRow({
           leading control (drag handle / eye) sits close on the outside. */}
       <span className="layer-body">
         <span className="layer-icon"><Ph_ name={def.icon} size={16} /></span>
-        <span className="layer-title">{def.label}</span>
+        {renaming ? (
+          <input
+            ref={nameRef}
+            className="layer-title-input"
+            value={draftName}
+            aria-label="Section name"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setDraftName(e.target.value)}
+            onBlur={saveName}
+            onKeyDown={(e) => {
+              e.stopPropagation()
+              if (e.key === 'Enter') saveName()
+              if (e.key === 'Escape') {
+                setDraftName(displayName)
+                setRenaming(false)
+              }
+            }}
+          />
+        ) : (
+          <span className="layer-title">{displayName}</span>
+        )}
       </span>
       {!pinned && (
-        <button
-          className="layer-delete"
-          title="Delete section"
-          onClick={(e) => {
-            e.stopPropagation()
-            actions.removeSection(section.id)
-          }}
-        >
-          <Ph_ name="Trash" size={14} />
-        </button>
+        <div className="layer-more-wrap" ref={menuRef}>
+          <button
+            className="layer-more"
+            title="More options"
+            aria-label={`More options for ${displayName}`}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen((open) => !open)
+            }}
+          >
+            <Ph_ name="DotsThree" size={18} weight="bold" />
+          </button>
+          {menuOpen && (
+            <div className="layer-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setDraftName(displayName)
+                  setMenuOpen(false)
+                  setRenaming(true)
+                }}
+              >
+                <Ph_ name="PencilSimple" size={14} /> Rename
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="danger"
+                onClick={() => actions.removeSection(section.id)}
+              >
+                <Ph_ name="Trash" size={14} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
       )}
       <Ph_ name="CaretRight" size={12} className="layer-chevron" />
     </div>
@@ -325,7 +390,7 @@ function ChildLevel({ sectionId }: { sectionId: string }) {
     <>
       <DrillHeader
         parent={page.name}
-        title={section ? REGISTRY[section.type].label : ''}
+        title={section ? section.name || REGISTRY[section.type].label : ''}
         onBack={() => actions.panelBack()}
       />
       <div className="panel-scroll level-content" key={sectionId}>

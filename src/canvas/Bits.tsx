@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { actions, getAt, useStore } from '../store'
+import { actions, darkImagePath, getAt, useStore } from '../store'
 import { Ph_ } from '../ui/Phosphor'
 
 /* Every section renders inside this so the little editable primitives
@@ -207,6 +207,15 @@ export function Pick({
 
 /* --------------------------------------------------------------- image */
 
+export function useThemeImage(path: string) {
+  const { props } = useSection()
+  const dualMode = useStore((s) => !!s.doc.theme.consumerThemeToggle)
+  const consumerAppearance = useStore((s) => s.consumerAppearance)
+  const light = getAt(props, path) as string | undefined
+  const dark = getAt(props, darkImagePath(path)) as string | undefined
+  return dualMode && consumerAppearance === 'dark' ? dark || light : light
+}
+
 export function Img({
   path,
   className = '',
@@ -216,8 +225,7 @@ export function Img({
   className?: string
   label?: string
 }) {
-  const { props } = useSection()
-  const src = getAt(props, path) as string | undefined
+  const src = useThemeImage(path)
   return (
     <Pick path={path} className={`media ${className}`}>
       {src ? (
@@ -233,8 +241,7 @@ export function Img({
 }
 
 export function Avatar({ path, name = '' }: { path: string; name?: string }) {
-  const { props } = useSection()
-  const src = getAt(props, path) as string | undefined
+  const src = useThemeImage(path)
   const initials = name
     .split(' ')
     .filter(Boolean)

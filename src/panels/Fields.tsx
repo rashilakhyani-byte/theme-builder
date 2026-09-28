@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { Field } from '../types'
-import { actions, getAt, useStore } from '../store'
+import { actions, darkImagePath, getAt, useStore } from '../store'
 import type { Section } from '../types'
 import { Icon } from '../ui/Icon'
 import { ICON_SUGGESTIONS, PHOSPHOR_NAMES, Ph_ } from '../ui/Phosphor'
@@ -261,55 +261,90 @@ function ImageControl({
   sectionId, path, label,
 }: { sectionId: string; path: string; label: string }) {
   const value = useStore((s) => String(getAt(findSection(s, sectionId)?.props ?? {}, path) ?? ''))
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [name, setName] = useState('')
+  const darkPath = darkImagePath(path)
+  const darkValue = useStore((s) => String(getAt(findSection(s, sectionId)?.props ?? {}, darkPath) ?? ''))
+  const dualMode = useStore((s) => !!s.doc.theme.consumerThemeToggle)
+  const lightRef = useRef<HTMLInputElement>(null)
+  const darkRef = useRef<HTMLInputElement>(null)
+  const [names, setNames] = useState<Record<string, string>>({})
+  const [imageMode, setImageMode] = useState<'light' | 'dark'>('light')
 
-  const onFile = (file?: File) => {
+  const onFile = (targetPath: string, file?: File) => {
     if (!file) return
-    setName(file.name)
+    setNames((current) => ({ ...current, [targetPath]: file.name }))
     const reader = new FileReader()
-    reader.onload = () => actions.setProp(sectionId, path, String(reader.result))
+    reader.onload = () => actions.setProp(sectionId, targetPath, String(reader.result))
     reader.readAsDataURL(file)
   }
 
+  const row = (mode: 'Light' | 'Dark', targetPath: string, rowValue: string, ref: RefObject<HTMLInputElement>) => (
+    <div className="img-row" data-image-mode={mode.toLowerCase()}>
+      <span
+        className="img-thumb"
+        style={rowValue ? { backgroundImage: `url("${rowValue.replace(/"/g, '\\"')}")` } : undefined}
+      >
+        {!rowValue && <Ph_ name={mode === 'Dark' ? 'Moon' : 'Image'} size={16} />}
+      </span>
+      <span className="img-meta">
+        <b>{dualMode ? `${mode} image` : rowValue ? names[targetPath] || 'Uploaded image' : 'No image'}</b>
+        <span>{rowValue ? names[targetPath] || 'PNG, JPG or SVG' : 'PNG, JPG or SVG'}</span>
+      </span>
+      <button className="btn-ui outline" onClick={() => ref.current?.click()}>
+        {rowValue ? 'Replace' : 'Upload'}
+      </button>
+      {rowValue && (
+        <button
+          className="btn-ui icon"
+          title={`Remove ${mode.toLowerCase()} image`}
+          onClick={() => {
+            setNames((current) => ({ ...current, [targetPath]: '' }))
+            actions.setProp(sectionId, targetPath, '')
+          }}
+        >
+          <Ph_ name="Trash" size={14} />
+        </button>
+      )}
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          onFile(targetPath, e.target.files?.[0] ?? undefined)
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+
   return (
     <FieldShell sectionId={sectionId} path={path} label={label} autofocusable={false}>
-      <div className="img-row">
-        <span
-          className="img-thumb"
-          style={value ? { backgroundImage: `url("${value.replace(/"/g, '\\"')}")` } : undefined}
-        >
-          {!value && <Ph_ name="Image" size={16} />}
-        </span>
-        <span className="img-meta">
-          <b>{value ? name || 'Uploaded image' : 'No image'}</b>
-          <span>PNG, JPG or SVG</span>
-        </span>
-        <button className="btn-ui outline" onClick={() => fileRef.current?.click()}>
-          {value ? 'Replace' : 'Upload'}
-        </button>
-        {value && (
-          <button
-            className="btn-ui icon"
-            title="Remove image"
-            onClick={() => {
-              setName('')
-              actions.setProp(sectionId, path, '')
-            }}
-          >
-            <Ph_ name="Trash" size={14} />
-          </button>
+      <div className={`img-mode-picker ${dualMode ? 'is-dual' : ''}`}>
+        {dualMode && (
+          <div className="img-mode-tabs" role="tablist" aria-label={`${label} theme image`}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={imageMode === 'light'}
+              className={imageMode === 'light' ? 'on' : ''}
+              onClick={() => setImageMode('light')}
+            >
+              <Ph_ name="Sun" size={13} /> Light
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={imageMode === 'dark'}
+              className={imageMode === 'dark' ? 'on' : ''}
+              onClick={() => setImageMode('dark')}
+            >
+              <Ph_ name="Moon" size={13} /> Dark
+            </button>
+          </div>
         )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => {
-            onFile(e.target.files?.[0] ?? undefined)
-            e.target.value = ''
-          }}
-        />
+        {imageMode === 'dark' && dualMode
+          ? row('Dark', darkPath, darkValue, darkRef)
+          : row('Light', path, value, lightRef)}
       </div>
     </FieldShell>
   )

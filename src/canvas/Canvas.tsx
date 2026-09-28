@@ -32,7 +32,7 @@ function SectionTag({
     <div className={`sec-tag ${pinned ? 'inside' : ''}`} onClick={stop}>
       <span className="sec-tag-name">
         <Ph_ name={def.icon} size={12} weight="fill" />
-        {def.label}
+        {section.name || def.label}
         <span style={{ opacity: 0.72, fontWeight: 500 }}> · {variant?.label ?? section.variant}</span>
       </span>
       {!pinned && (

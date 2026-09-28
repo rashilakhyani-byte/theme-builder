@@ -536,6 +536,13 @@ button.drill-crumb:hover { color: var(--ui-fg); }
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 14px; line-height: 22px; font-weight: 500; color: var(--ui-fg);
 }
+.layer-title-input {
+  flex: 1; min-width: 0; height: 30px; padding: 3px 7px;
+  border: 1px solid var(--ui-brand); border-radius: 6px; outline: 0;
+  background: var(--ui-step-up); color: var(--ui-fg);
+  font: inherit; font-size: 14px; line-height: 22px; font-weight: 500;
+  box-shadow: 0 0 0 3px rgba(2, 101, 220, .12);
+}
 /* The drag handle and the eye toggle are deliberately the same footprint —
    whichever one a row shows, .layer-body lands in the same place after it. */
 .layer-handle {
@@ -557,13 +564,27 @@ button.drill-crumb:hover { color: var(--ui-fg); }
 .layer.is-off .layer-icon,
 .layer.is-off .layer-title { opacity: .45; }
 .layer:active .layer-handle { cursor: grabbing; }
-.layer-delete {
+.layer-more-wrap { position: relative; flex: none; }
+.layer-more {
   width: 26px; height: 26px; flex: none; border: 0; border-radius: 6px; background: transparent;
   color: var(--ui-fg-4); display: grid; place-items: center; cursor: pointer;
   opacity: 0; transition: opacity .12s, background .12s, color .12s;
 }
-.layer:hover .layer-delete, .layer:focus-within .layer-delete { opacity: 1; }
-.layer-delete:hover { background: var(--ui-danger-tint); color: var(--ui-danger); }
+.layer:hover .layer-more, .layer:focus-within .layer-more, .layer-more[aria-expanded='true'] { opacity: 1; }
+.layer-more:hover { background: var(--ui-l2); color: var(--ui-fg); }
+.layer-menu {
+  position: absolute; z-index: 40; top: calc(100% + 4px); right: 0; width: 132px; padding: 4px;
+  border: 1px solid var(--ui-stroke); border-radius: 8px; background: var(--ui-step-up);
+  box-shadow: 0 10px 28px -10px rgba(38, 38, 38, .25);
+}
+.layer-menu button {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 9px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--ui-fg-2);
+  font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+.layer-menu button:hover { background: var(--ui-ground); color: var(--ui-fg); }
+.layer-menu button.danger { color: var(--ui-danger); }
+.layer-menu button.danger:hover { background: var(--ui-danger-tint); }
 .layer-chevron { flex: none; color: var(--ui-fg-3); }
 
 .theme-dot {
@@ -933,6 +954,23 @@ select.control {
 }
 
 /* image field — a compact upload row */
+.img-mode-picker { display: flex; flex-direction: column; }
+.img-mode-picker.is-dual {
+  padding: 6px; border: 1px solid var(--ui-stroke); border-radius: 12px; background: var(--ui-step-up);
+}
+.img-mode-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 6px; padding: 3px;
+  border-radius: 8px; background: var(--ui-l2);
+}
+.img-mode-tabs button {
+  display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 0 8px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--ui-fg-3);
+  font: inherit; font-size: 11.5px; font-weight: 550; cursor: pointer;
+}
+.img-mode-tabs button:hover { color: var(--ui-fg); }
+.img-mode-tabs button.on { background: var(--ui-step-up); color: var(--ui-fg); box-shadow: 0 1px 3px rgba(38, 38, 38, .1); }
+.img-mode-tabs button:focus-visible { outline: 2px solid var(--ui-brand); outline-offset: 1px; }
+.img-mode-picker.is-dual .img-row { border: 0; border-radius: 8px; background: var(--ui-ground); }
 .img-row {
   display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px;
   border: 1px solid var(--ui-stroke); border-radius: 10px; background: var(--ui-step-up);
@@ -1254,6 +1292,15 @@ select.control {
 .tp-kicker { font-family: var(--ui-mono); font-size: 11px; line-height: 16px; color: var(--ui-fg-4); }
 .tp-head { font-size: 22px; line-height: 1.18; font-weight: 700; letter-spacing: -0.02em; color: var(--ui-fg); }
 .tp-body { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ui-fg-3); }
+.tp-upload-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px; border: 1px solid var(--ui-stroke); border-radius: 10px; background: var(--ui-step-up);
+}
+.tp-upload-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+.tp-upload-copy > label { font-size: 13px; line-height: 20px; font-weight: 600; color: var(--ui-fg); }
+.tp-upload-message { font-size: 10.5px; line-height: 15px; color: var(--ui-brand); }
+.tp-upload-input { display: none; }
+.tp-upload-btn { flex: none; height: 32px; padding: 0 10px; }
 
 .font-select { position: relative; }
 .font-trigger { cursor: pointer; font: inherit; height: 36px; }

@@ -1,6 +1,6 @@
 import type { Section } from '../types'
 import { Ph_ } from '../ui/Phosphor'
-import { Btn, Ed, Ico, Pick, useSection } from '../canvas/Bits'
+import { Btn, Ed, Ico, Pick, useSection, useThemeImage } from '../canvas/Bits'
 import {
   Awards, FeaturedApis, GettingStarted, Marketplace, Partners, PortalContact,
   PortalFaq, PortalFooter, PortalHero, PortalNav, References, Resources, Solution, WhyChooseUs,
@@ -81,11 +81,12 @@ function Cta({ p, variant }: { p: P; variant: string }) {
 
 function AuthForm({ p }: { p: P }) {
   const methods: any[] = p.methods ?? []
+  const logoImage = useThemeImage('logoImage')
   return (
     <div className="auth-form">
-      {p.logoImage ? (
+      {logoImage ? (
         <Pick path="logoImage" className="brand">
-          <img src={p.logoImage} alt={p.logoText ?? ''} className="brand-logo" />
+          <img src={logoImage} alt={p.logoText ?? ''} className="brand-logo" />
         </Pick>
       ) : (
         <Pick path="logoImage" className="brand" as="div">
@@ -158,11 +159,11 @@ function AuthForm({ p }: { p: P }) {
 }
 
 function AuthArt({ p }: { p: P }) {
-  const { props } = useSection()
+  const image = useThemeImage('image')
   return (
     <div className="auth-art">
       <Pick path="image" className="auth-art-media">
-        {props.image ? <img src={props.image} alt="" /> : <div className="auth-art-fallback" />}
+        {image ? <img src={image} alt="" /> : <div className="auth-art-fallback" />}
       </Pick>
       {p.showArtCaption && (
         <div className="auth-art-caption">

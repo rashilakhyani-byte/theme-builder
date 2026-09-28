@@ -201,8 +201,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     icon: 'AppWindow',
     defaultSurface: 'brand',
     variants: [
-      { id: 'split', label: 'Split with artwork', surface: 'brand' },
-      { id: 'centered', label: 'Centered with product', surface: 'page' },
+      { id: 'split', label: 'Left align', surface: 'brand' },
+      { id: 'centered', label: 'Center align', surface: 'page' },
     ],
     fields: [
       ...eyebrow,
@@ -328,9 +328,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     icon: 'ChartBar',
     defaultSurface: 'page',
     variants: [
-      { id: 'grid', label: 'Categories with API cards' },
-      { id: 'tabs', label: 'Tabbed API cards' },
-      { id: 'split', label: 'Categories with endpoints' },
+      { id: 'grid', label: 'API cards' },
+      { id: 'tabs', label: 'Tabbed cards' },
+      { id: 'split', label: 'API endpoints' },
     ],
     fields: [
       ...heading,
@@ -390,7 +390,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     icon: 'Storefront',
     defaultSurface: 'page',
     variants: [
-      { id: 'list', label: 'Feature list with try-out' },
+      { id: 'list', label: 'Feature list' },
       { id: 'carousel', label: 'Feature carousel' },
     ],
     fields: [

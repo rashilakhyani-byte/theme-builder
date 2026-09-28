@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { actions, useStore } from './store'
 import { paletteTokens } from './theme/palette'
-import { DEFAULT_FONT, fontStack, useFonts } from './theme/fonts'
+import { DEFAULT_FONT, fontStack, useCustomFonts, useFonts } from './theme/fonts'
 import { Canvas } from './canvas/Canvas'
 import { LeftPanel } from './panels/LeftPanel'
 import { AddSection } from './panels/AddSection'
@@ -212,6 +212,7 @@ export default function App() {
   const fontPrimary = theme.fontPrimary ?? DEFAULT_FONT
   const fontSecondary = theme.fontSecondary ?? DEFAULT_FONT
   useFonts([fontPrimary, fontSecondary])
+  useCustomFonts(theme.customFonts)
 
   // Layer 1 of the token system, applied once at the root so the portal chrome
   // and the previewed site read from the same generated palette. The two font
