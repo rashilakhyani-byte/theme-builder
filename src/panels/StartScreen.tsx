@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { actions } from '../store'
+import { actions, useStore } from '../store'
 import { TEMPLATES, blankDoc, docFromTemplate } from '../templates'
 import { Ph_ } from '../ui/Phosphor'
 import { SectionPreview } from './SectionPreview'
@@ -15,9 +15,11 @@ type FullView = 'gallery' | 'preview'
  * template is visible the moment it's applied.
  */
 export function StartScreen() {
+  const version = useStore((s) => s.version)
   const [choice, setChoice] = useState<string>(TEMPLATES[0].id)
-  const [approach, setApproach] = useState<Approach>('full')
+  const [approach, setApproach] = useState<Approach>(() => version === 'v3' ? 'split' : 'full')
   const [fullView, setFullView] = useState<FullView>('gallery')
+  const activeApproach: Approach = version === 'v3' ? 'split' : approach
   const template = TEMPLATES.find((t) => t.id === choice)
 
   const go = () => actions.startWith(template ? docFromTemplate(template) : blankDoc())
@@ -111,7 +113,7 @@ export function StartScreen() {
 
   return (
     <div className="overlay start-overlay">
-      <div className={`modal start-modal ${(approach === 'split' || fullView === 'preview') ? 'is-wide' : ''}`}>
+      <div className={`modal start-modal ${(activeApproach === 'split' || fullView === 'preview') ? 'is-wide' : ''}`}>
         <div className="modal-head">
           <div>
             <div className="modal-title">Start your portal</div>
@@ -119,10 +121,10 @@ export function StartScreen() {
               Pick a template to customise, or start from a blank canvas and drag sections in.
             </div>
           </div>
-          {approachSwitch}
+          {version !== 'v3' && approachSwitch}
         </div>
 
-        {approach === 'full' ? (
+        {activeApproach === 'full' ? (
           <div className={`modal-body ${fullView === 'preview' ? 'start-full-preview' : ''}`}>
             {fullView === 'gallery' ? gallery : template && (
               <>
@@ -175,12 +177,18 @@ export function StartScreen() {
             </aside>
             <div className="start-split-main">
               {template ? (
-                <>
-                  {previewHeader}
-                  <div className="template-preview-scroll">
+                version === 'v3' ? (
+                  <div className="start-v3-preview">
                     <TemplatePreview template={template} />
                   </div>
-                </>
+                ) : (
+                  <>
+                    {previewHeader}
+                    <div className="template-preview-scroll">
+                      <TemplatePreview template={template} />
+                    </div>
+                  </>
+                )
               ) : (
                 <div className="start-blank-preview">
                   <span className="start-blank-mark"><Ph_ name="Plus" size={22} /></span>
@@ -193,7 +201,7 @@ export function StartScreen() {
         )}
 
         <div className="modal-foot">
-          {approach === 'full' && fullView === 'gallery' && template && (
+          {activeApproach === 'full' && fullView === 'gallery' && template && (
             <button className="btn-ui outline" onClick={() => setFullView('preview')}>
               <Ph_ name="Eye" size={15} /> Preview selected
             </button>

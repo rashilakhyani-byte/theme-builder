@@ -634,9 +634,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       { kind: 'text', path: 'title', label: 'Title', multiline: true },
       { kind: 'text', path: 'sub', label: 'Description', multiline: true },
       button('cta', 'Button'),
-      { kind: 'divider', label: 'Form' },
-      { kind: 'text', path: 'formTitle', label: 'Form title' },
-      { kind: 'text', path: 'formSub', label: 'Form subtitle' },
+      { kind: 'divider', label: 'Contact form' },
+      { kind: 'text', path: 'formTitle', label: 'Heading' },
+      { kind: 'text', path: 'formSub', label: 'Supporting text' },
       {
         kind: 'list', path: 'fields', label: 'Fields', itemTitle: 'label', addLabel: 'Add field',
         itemFields: [
@@ -647,8 +647,8 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ label: 'New field', placeholder: '', icon: 'TextT', multiline: false }),
       },
-      { kind: 'text', path: 'submitLabel', label: 'Submit button' },
-      { kind: 'text', path: 'legal', label: 'Consent line' },
+      { kind: 'text', path: 'submitLabel', label: 'Submit button label' },
+      { kind: 'text', path: 'legal', label: 'Consent text' },
     ],
     defaults: () => ({
       title: 'Start building today',

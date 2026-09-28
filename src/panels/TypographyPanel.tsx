@@ -182,8 +182,8 @@ export function TypographyPanel() {
               const dataUrl = String(reader.result ?? '')
               if (!dataUrl || !family) return
               const customFonts = [...(theme.customFonts ?? []).filter((font) => font.family !== family), { family, dataUrl }]
-              actions.setTheme({ customFonts, fontPrimary: family })
-              setUploadMessage(`${family} uploaded and set as the primary font.`)
+              actions.setTheme({ customFonts })
+              setUploadMessage(`${family} uploaded. Choose it for either font.`)
             }
             reader.onerror = () => setUploadMessage('This font could not be uploaded.')
             reader.readAsDataURL(file)

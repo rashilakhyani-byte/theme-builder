@@ -117,6 +117,17 @@ export function defaultDoc(): Doc {
   }
 }
 
+/** A non-destructive backdrop for the template chooser: chrome, but no Home sections. */
+function emptyCanvasDoc(doc: Doc): Doc {
+  return {
+    ...doc,
+    pages: {
+      ...doc.pages,
+      home: { ...doc.pages.home, body: [] },
+    },
+  }
+}
+
 /* ------------------------------------------------------------ the store */
 
 interface State {
@@ -164,7 +175,9 @@ interface State {
 }
 
 const initialVersion = loadVersion()
-const initialDoc = load(initialVersion) ?? defaultDoc()
+const initialStarted = isStarted(initialVersion)
+const loadedInitialDoc = load(initialVersion) ?? defaultDoc()
+const initialDoc = initialStarted ? loadedInitialDoc : emptyCanvasDoc(loadedInitialDoc)
 
 function loadConsumerAppearance(fallback: Appearance): Appearance {
   try {
@@ -177,7 +190,7 @@ function loadConsumerAppearance(fallback: Appearance): Appearance {
 
 let state: State = {
   version: initialVersion,
-  started: isStarted(initialVersion),
+  started: initialStarted,
   library: null,
   doc: initialDoc,
   consumerAppearance: loadConsumerAppearance(initialDoc.theme.appearance),
@@ -221,9 +234,9 @@ export const getState = () => state
 function loadVersion(): BuilderVersion {
   try {
     const saved = localStorage.getItem(VERSION_KEY)
-    return saved === 'v2' || saved === 'v3' ? saved : 'v1'
+    return saved === 'v1' || saved === 'v2' || saved === 'v3' ? saved : 'v3'
   } catch {
-    return 'v1'
+    return 'v3'
   }
 }
 
@@ -396,11 +409,13 @@ export const actions = {
     } catch {
       /* private mode — the switch still applies for this session */
     }
-    const doc = load(version) ?? defaultDoc()
+    const started = isStarted(version)
+    const loadedDoc = load(version) ?? defaultDoc()
+    const doc = started ? loadedDoc : emptyCanvasDoc(loadedDoc)
     state = {
       ...state,
       version,
-      started: isStarted(version),
+      started,
       doc,
       consumerAppearance: loadConsumerAppearance(doc.theme.appearance),
       past: [],
@@ -440,14 +455,25 @@ export const actions = {
     emit()
   },
 
-  /** Back to the start screen, keeping the current document until a choice is made. */
+  /** Back to the start screen with a temporary blank canvas behind the chooser. */
   restart() {
     try {
       localStorage.removeItem(startedKey(state.version))
     } catch {
       /* ignore */
     }
-    patch({ started: false, selection: null, preview: false })
+    patch({
+      doc: emptyCanvasDoc(state.doc),
+      started: false,
+      pageId: 'home',
+      panel: 'root',
+      sidebarTab: 'page',
+      selection: null,
+      library: null,
+      preview: false,
+      past: [],
+      future: [],
+    })
   },
   /** Select a section from the layer list and bring it into view on the canvas.
       Canvas clicks use `select` instead — the element is already on screen. */

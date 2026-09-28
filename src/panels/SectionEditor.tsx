@@ -393,7 +393,9 @@ function PopupSectionEditor({
             ? group.fields[0]
             : null
           if (isNavigation && group.title === 'Content') {
-            const logoFields = group.fields.filter((field) => field.kind === 'image')
+            const logoFields = group.fields
+              .filter((field) => field.kind === 'image')
+              .map((field) => ({ ...field, label: '' }))
             return (
               <V3InlineGroup key={`${group.title}-${index}`} title="Brand logo">
                 <FieldList sectionId={section.id} fields={logoFields} />
@@ -432,7 +434,7 @@ function PopupSectionEditor({
           ) : (
             <SettingRow
               key={`${group.title}-${index}`}
-              icon={group.title === 'Content' ? 'TextT' : 'SlidersHorizontal'}
+              icon={group.title === 'Artwork' ? undefined : group.title === 'Content' ? 'TextT' : 'SlidersHorizontal'}
               label={group.title}
               value={`${group.fields.length} ${group.fields.length === 1 ? 'setting' : 'settings'}`}
               popupKey={`group-${index}`}
@@ -717,7 +719,7 @@ function SettingRow({
   popupKey,
   onClick,
 }: {
-  icon: string
+  icon?: string
   label: string
   value: string
   popupKey: PopupKey
@@ -729,7 +731,7 @@ function SettingRow({
       data-popup-key={popupKey}
       onClick={(event) => onClick(event.currentTarget)}
     >
-      <span className="v3-setting-icon"><Ph_ name={icon} size={17} /></span>
+      {icon && <span className="v3-setting-icon"><Ph_ name={icon} size={17} /></span>}
       <span className="v3-setting-copy">
         <strong>{label}</strong>
         <span>{value}</span>
