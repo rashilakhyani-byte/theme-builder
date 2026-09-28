@@ -83,101 +83,82 @@ export function ThemePanel() {
   }
 
   return (
-    <div className="sect">
-      <div className="field-ui consumer-theme-control">
-        <div className="row-between">
-          <div className="consumer-theme-copy">
-            <label>Portal theme toggle</label>
-            <span className="hint">Allow visitors to switch between light and dark mode.</span>
+    <>
+      <section className="sect">
+        <div className="sect-label">Brand</div>
+        <div className="field-ui">
+          <label htmlFor="brand-hex">Brand colour</label>
+          <div className="field-row">
+            <div className="input-area">
+              <Ph_ name="Palette" size={16} />
+              <input
+                id="brand-hex"
+                value={hex}
+                spellCheck={false}
+                onChange={(e) => {
+                  setHex(e.target.value)
+                  commitHex(e.target.value)
+                }}
+                onBlur={() => setHex(theme.accent)}
+              />
+            </div>
+            <span className="color-swatch" style={{ background: theme.accent }} title="Pick a colour">
+              <input
+                type="color"
+                value={theme.accent}
+                aria-label="Pick a brand colour"
+                onChange={(e) => actions.setTheme({ accent: e.target.value })}
+              />
+            </span>
           </div>
-          <button
-            type="button"
-            className={`switch ${theme.consumerThemeToggle ? 'on' : ''}`}
-            role="switch"
-            aria-checked={!!theme.consumerThemeToggle}
-            aria-label="Allow visitors to switch between light and dark mode"
-            onClick={() => actions.setTheme({ consumerThemeToggle: !theme.consumerThemeToggle })}
-          >
-            <span />
-          </button>
         </div>
-      </div>
-
-      <div className="field-ui">
-        <label htmlFor="brand-hex">Brand colour</label>
-        <div className="field-row">
-          <div className="input-area">
-            <Ph_ name="Palette" size={16} />
-            <input
-              id="brand-hex"
-              value={hex}
-              spellCheck={false}
-              onChange={(e) => {
-                setHex(e.target.value)
-                commitHex(e.target.value)
-              }}
-              onBlur={() => setHex(theme.accent)}
-            />
+        <div className="field-ui">
+          <label>Theme</label>
+          <div className="mode-list">
+            {CHROME_ORDER.map((c) => (
+              <button key={c} className={`mode ${theme.chrome === c ? 'on' : ''}`} onClick={() => actions.setTheme({ chrome: c })}>
+                <ChromePreview accent={theme.accent} appearance={theme.appearance} chrome={c} />
+                <span className="mode-text">
+                  <span className="mode-name">{CHROME_COPY[c].name}</span>
+                  <span className="mode-desc">{CHROME_COPY[c].desc}</span>
+                </span>
+              </button>
+            ))}
           </div>
-          <span className="color-swatch" style={{ background: theme.accent }} title="Pick a colour">
-            <input
-              type="color"
-              value={theme.accent}
-              aria-label="Pick a brand colour"
-              onChange={(e) => actions.setTheme({ accent: e.target.value })}
-            />
-          </span>
         </div>
-      </div>
+      </section>
 
-      <div className="field-ui">
-        <label>Appearance</label>
-        <div className="seg seg-fill">
-          {(['light', 'dark'] as Appearance[]).map((a) => (
-            <button
-              key={a}
-              className={theme.appearance === a ? 'on' : ''}
-              onClick={() => actions.setTheme({ appearance: a })}
-            >
-              {a[0].toUpperCase() + a.slice(1)}
+      <section className="sect">
+        <div className="sect-label">Appearance</div>
+        <div className="field-ui">
+          <label>Colour mode</label>
+          <div className="seg seg-fill">
+            {(['light', 'dark'] as Appearance[]).map((a) => (
+              <button key={a} className={theme.appearance === a ? 'on' : ''} onClick={() => actions.setTheme({ appearance: a })}>
+                {a[0].toUpperCase() + a.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="field-ui consumer-theme-control">
+          <div className="row-between">
+            <div className="consumer-theme-copy">
+              <label>Portal theme toggle</label>
+              <span className="hint">Allow visitors to switch between light and dark mode.</span>
+            </div>
+            <button type="button" className={`switch ${theme.consumerThemeToggle ? 'on' : ''}`} role="switch" aria-checked={!!theme.consumerThemeToggle} aria-label="Allow visitors to switch between light and dark mode" onClick={() => actions.setTheme({ consumerThemeToggle: !theme.consumerThemeToggle })}>
+              <span />
             </button>
-          ))}
+          </div>
         </div>
-      </div>
-
-      <div className="field-ui">
-        <label>Theme</label>
-        <div className="mode-list">
-          {CHROME_ORDER.map((c) => (
-            <button
-              key={c}
-              className={`mode ${theme.chrome === c ? 'on' : ''}`}
-              onClick={() => actions.setTheme({ chrome: c })}
-            >
-              <ChromePreview accent={theme.accent} appearance={theme.appearance} chrome={c} />
-              <span className="mode-text">
-                <span className="mode-name">{CHROME_COPY[c].name}</span>
-                <span className="mode-desc">{CHROME_COPY[c].desc}</span>
-              </span>
-            </button>
-          ))}
+        <div className="field-ui">
+          <div className="row-between">
+            <label>Corner radius</label>
+            <span className="hint">{theme.radius}px</span>
+          </div>
+          <input className="slider" type="range" min={0} max={24} value={theme.radius} onChange={(e) => actions.setTheme({ radius: Number(e.target.value) })} />
         </div>
-      </div>
-
-      <div className="field-ui">
-        <div className="row-between">
-          <label>Corner radius</label>
-          <span className="hint">{theme.radius}px</span>
-        </div>
-        <input
-          className="slider"
-          type="range"
-          min={0}
-          max={24}
-          value={theme.radius}
-          onChange={(e) => actions.setTheme({ radius: Number(e.target.value) })}
-        />
-      </div>
-    </div>
+      </section>
+    </>
   )
 }

@@ -5,7 +5,7 @@ import type { Field, Section, Surface } from '../types'
 import type { GeneratedPalette as Palette } from '../theme/palette'
 import { buildPalette } from '../theme/palette'
 import { Icon } from '../ui/Icon'
-import { Ph_ } from '../ui/Phosphor'
+import { ICON_SUGGESTIONS, Ph_ } from '../ui/Phosphor'
 import { FieldList } from './Fields'
 import { SectionPreview } from './SectionPreview'
 import { useDismiss } from '../ui/useDismiss'
@@ -283,6 +283,16 @@ function PopupSectionEditor({
   const def = REGISTRY[section.type]
   const isNavigation = section.type === 'nav'
   const groups = useMemo(() => sourceGroups.flatMap((group) => {
+    if (section.type === 'contact' && group.title === 'Form') {
+      const fieldListIndex = group.fields.findIndex((field) => field.kind === 'list' && field.path === 'fields')
+      if (fieldListIndex >= 0) {
+        return [
+          { title: 'Form header', fields: group.fields.slice(0, fieldListIndex) },
+          { title: 'Form fields', fields: [group.fields[fieldListIndex]] },
+          { title: 'Form button', fields: group.fields.slice(fieldListIndex + 1) },
+        ]
+      }
+    }
     const lists = group.fields.filter((field): field is Extract<Field, { kind: 'list' }> => field.kind === 'list')
     if (!lists.length) return [group]
     const remaining = group.fields.filter((field) => field.kind !== 'list')
@@ -292,7 +302,7 @@ function PopupSectionEditor({
       ...(remaining.length || lists.length > 1 ? {} : { listLabel: field.label }),
     }))
     return remaining.length ? [{ title: group.title, fields: remaining }, ...listGroups] : listGroups
-  }), [sourceGroups])
+  }), [sourceGroups, section.type])
   const selectedPath = useStore((s) => (
     s.selection?.sectionId === section.id ? s.selection.path : undefined
   ))
@@ -374,7 +384,11 @@ function PopupSectionEditor({
         ? String((childMatch ? childItem : item)?.[itemField.itemTitle] ?? '') || `${childMatch ? 'Child' : 'Item'} ${childMatch ? childIndex + 1 : itemIndex + 1}`
         : actionField
           ? actionTitle
-          : groups[groupIndex]?.title ?? ''
+          : groups[groupIndex]?.title === 'Form header'
+            ? 'Header'
+            : groups[groupIndex]?.title === 'Form button'
+              ? 'Button'
+              : groups[groupIndex]?.title ?? ''
 
   return (
     <div className="v3-editor" ref={editorRef}>
@@ -392,21 +406,64 @@ function PopupSectionEditor({
           const list = group.fields.length === 1 && group.fields[0].kind === 'list'
             ? group.fields[0]
             : null
-          if (isNavigation && group.title === 'Content') {
-            const logoFields = group.fields
-              .filter((field) => field.kind === 'image')
-              .map((field) => ({ ...field, label: '' }))
-            return (
-              <V3InlineGroup key={`${group.title}-${index}`} title="Brand logo">
-                <FieldList sectionId={section.id} fields={logoFields} />
-              </V3InlineGroup>
-            )
+          if (section.type === 'featuredApis' && list?.path === 'apis') return null
+          if (section.type === 'featuredApis' && list?.path === 'categories') {
+            const apiGroupIndex = groups.findIndex((candidate) => (
+              candidate.fields.length === 1
+              && candidate.fields[0].kind === 'list'
+              && candidate.fields[0].path === 'apis'
+            ))
+            const apiField = apiGroupIndex >= 0 && groups[apiGroupIndex].fields[0].kind === 'list'
+              ? groups[apiGroupIndex].fields[0]
+              : null
+            return apiField ? (
+              <V3FeaturedApisGroup
+                key={`${group.title}-${index}`}
+                section={section}
+                categoryField={list}
+                categoryGroupIndex={index}
+                apiField={apiField}
+                apiGroupIndex={apiGroupIndex}
+                openPopup={openPopup}
+              />
+            ) : null
+          }
+          if (section.type === 'contact' && (group.title === 'Form fields' || group.title === 'Form button')) return null
+          if (section.type === 'contact' && group.title === 'Form header') {
+            const fieldsGroupIndex = groups.findIndex((candidate) => candidate.title === 'Form fields')
+            const buttonGroupIndex = groups.findIndex((candidate) => candidate.title === 'Form button')
+            const formField = fieldsGroupIndex >= 0 && groups[fieldsGroupIndex].fields[0]?.kind === 'list'
+              ? groups[fieldsGroupIndex].fields[0]
+              : null
+            return formField ? (
+              <V3ContactFormGroup
+                key="contact-form"
+                section={section}
+                headerGroupIndex={index}
+                fieldsGroupIndex={fieldsGroupIndex}
+                buttonGroupIndex={buttonGroupIndex}
+                field={formField}
+                openPopup={openPopup}
+              />
+            ) : null
           }
           if (group.title === 'Content') {
+            const key: PopupKey = `group-${index}`
             return (
-              <V3InlineGroup key={`${group.title}-${index}`} title="Content">
-                <FieldList sectionId={section.id} fields={group.fields} />
-              </V3InlineGroup>
+              <div className="v3-inline-group" key={`${group.title}-${index}`}>
+                <div className="v3-inline-title">{group.title}</div>
+                <button
+                  className="v3-content-card"
+                  data-popup-key={key}
+                  onClick={(event) => openPopup(key, event.currentTarget)}
+                >
+                  <span className="v3-content-card-copy">
+                    <strong>Content details</strong>
+                    <span>{group.fields.length} {group.fields.length === 1 ? 'attribute' : 'attributes'}</span>
+                  </span>
+                  <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
+                </button>
+              </div>
             )
           }
           const isToggleGroup = group.fields.length > 0
@@ -434,7 +491,7 @@ function PopupSectionEditor({
           ) : (
             <SettingRow
               key={`${group.title}-${index}`}
-              icon={group.title === 'Artwork' ? undefined : group.title === 'Content' ? 'TextT' : 'SlidersHorizontal'}
+              icon={group.title === 'Artwork' || group.title === 'Content' ? undefined : 'SlidersHorizontal'}
               label={group.title}
               value={`${group.fields.length} ${group.fields.length === 1 ? 'setting' : 'settings'}`}
               popupKey={`group-${index}`}
@@ -481,7 +538,14 @@ function PopupSectionEditor({
                 <FieldList sectionId={section.id} fields={groups[groupIndex].fields} />
               )}
               {itemField && itemIndex >= 0 && (
-                isNavigation && itemField.path === 'links' ? (
+                section.type === 'contact' && itemField.path === 'fields' ? (
+                  <ContactFormFieldEditor
+                    sectionId={section.id}
+                    basePath={`${itemField.path}[${itemIndex}]`}
+                    item={item}
+                    fields={attributeFields ?? itemField.itemFields}
+                  />
+                ) : isNavigation && itemField.path === 'links' ? (
                   <NavAttributeEditor
                     sectionId={section.id}
                     basePath={childMatch
@@ -529,6 +593,267 @@ function PopupSectionEditor({
   )
 }
 
+function ContactFormFieldEditor({
+  sectionId,
+  basePath,
+  item,
+  fields,
+}: {
+  sectionId: string
+  basePath: string
+  item: any
+  fields: Field[]
+}) {
+  const [iconsOpen, setIconsOpen] = useState(false)
+  const [iconAnchor, setIconAnchor] = useState<DOMRect | null>(null)
+  const [parentPopupRect, setParentPopupRect] = useState<DOMRect | null>(null)
+  const iconPickerRef = useRef<HTMLDivElement>(null)
+  const iconMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!iconsOpen) return
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (!iconPickerRef.current?.contains(target) && !iconMenuRef.current?.contains(target)) {
+        setIconsOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [iconsOpen])
+  const labelField = fields.filter((field) => 'path' in field && field.path === 'label')
+  const trailingFields = fields.filter((field) => (
+    'path' in field && field.path !== 'label' && field.path !== 'placeholder' && field.path !== 'icon'
+  ))
+  const icon = String(item?.icon ?? 'TextT')
+
+  return (
+    <div className="v3-contact-field-editor">
+      <FieldList sectionId={sectionId} fields={labelField} prefix={`${basePath}.`} />
+      <div className="field-ui">
+        <label htmlFor={`${basePath}-placeholder`}>Placeholder</label>
+        <div className="v3-placeholder-row">
+          <div className="v3-inline-icon-picker" ref={iconPickerRef}>
+            <button
+              type="button"
+              className={`v3-inline-icon-trigger ${iconsOpen ? 'open' : ''}`}
+              aria-label="Choose placeholder icon"
+              aria-haspopup="listbox"
+              aria-expanded={iconsOpen}
+              onClick={(event) => {
+                setIconAnchor(event.currentTarget.getBoundingClientRect())
+                setParentPopupRect(event.currentTarget.closest<HTMLElement>('.v3-popup')?.getBoundingClientRect() ?? null)
+                setIconsOpen((value) => !value)
+              }}
+            >
+              <Ph_ name={icon} size={18} />
+            </button>
+            {iconsOpen && iconAnchor && createPortal(
+              <div
+                className="v3-inline-icon-menu"
+                ref={iconMenuRef}
+                role="listbox"
+                aria-label="Placeholder icon"
+                style={{
+                  left: parentPopupRect
+                    ? (parentPopupRect.right + 254 <= window.innerWidth
+                        ? parentPopupRect.right + 10
+                        : Math.max(10, parentPopupRect.left - 254))
+                    : Math.min(iconAnchor.left, window.innerWidth - 254),
+                  top: Math.min(iconAnchor.top, window.innerHeight - 214),
+                }}
+              >
+                {ICON_SUGGESTIONS.map((name) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={name === icon}
+                    className={name === icon ? 'on' : ''}
+                    key={name}
+                    title={name}
+                    onClick={() => {
+                      actions.setProp(sectionId, `${basePath}.icon`, name)
+                      setIconsOpen(false)
+                    }}
+                  >
+                    <Ph_ name={name} size={17} />
+                  </button>
+                ))}
+              </div>,
+              document.querySelector('.app-root') ?? document.body,
+            )}
+          </div>
+          <input
+            id={`${basePath}-placeholder`}
+            className="control"
+            value={String(item?.placeholder ?? '')}
+            placeholder="Enter placeholder text"
+            onChange={(event) => actions.setProp(sectionId, `${basePath}.placeholder`, event.target.value)}
+          />
+        </div>
+      </div>
+      <FieldList sectionId={sectionId} fields={trailingFields} prefix={`${basePath}.`} />
+    </div>
+  )
+}
+
+function V3ContactFormGroup({
+  section,
+  headerGroupIndex,
+  fieldsGroupIndex,
+  buttonGroupIndex,
+  field,
+  openPopup,
+}: {
+  section: Section
+  headerGroupIndex: number
+  fieldsGroupIndex: number
+  buttonGroupIndex: number
+  field: Extract<Field, { kind: 'list' }>
+  openPopup: (key: PopupKey, target?: HTMLElement | null) => void
+}) {
+  const items = ((section.props as any)[field.path] ?? []) as any[]
+  const cards = [
+    { label: 'Header', detail: 'Heading and supporting text', key: `group-${headerGroupIndex}` as PopupKey, draggable: false },
+    ...items.slice(0, 4).map((item, index) => ({
+      label: String(item?.[field.itemTitle] ?? '') || `Field ${index + 1}`,
+      detail: 'Form field',
+      key: `item-${fieldsGroupIndex}-${index}` as PopupKey,
+      draggable: true,
+    })),
+    { label: 'Button', detail: 'Required call to action', key: `group-${buttonGroupIndex}` as PopupKey, draggable: false },
+  ]
+
+  return (
+    <div className="v3-inline-group v3-contact-form-group">
+      <div className="v3-inline-title">Form</div>
+      <div className="v3-contact-form-list">
+        {cards.map((card) => (
+          <button
+            className="v3-content-card"
+            key={card.key}
+            data-popup-key={card.key}
+            onClick={(event) => openPopup(card.key, event.currentTarget)}
+          >
+            <span
+              className={`v3-list-item-icon ${card.draggable ? '' : 'is-placeholder'}`}
+              aria-hidden="true"
+            >
+              <Ph_ name="DotsSixVertical" size={14} weight="bold" />
+            </span>
+            <span className="v3-content-card-copy">
+              <strong>{card.label}</strong>
+              <span>{card.detail}</span>
+            </span>
+            <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function apiCategoryKey(value: unknown) {
+  return String(value ?? '').trim().toLowerCase().replace(/\s+apis?$/, '')
+}
+
+function V3FeaturedApisGroup({
+  section,
+  categoryField,
+  categoryGroupIndex,
+  apiField,
+  apiGroupIndex,
+  openPopup,
+}: {
+  section: Section
+  categoryField: Extract<Field, { kind: 'list' }>
+  categoryGroupIndex: number
+  apiField: Extract<Field, { kind: 'list' }>
+  apiGroupIndex: number
+  openPopup: (key: PopupKey, target?: HTMLElement | null) => void
+}) {
+  const categories = ((section.props as any)[categoryField.path] ?? []) as any[]
+  const apis = ((section.props as any)[apiField.path] ?? []) as any[]
+  const atMax = categoryField.max !== undefined && categories.length >= categoryField.max
+
+  return (
+    <div className="v3-list-group v3-featured-api-tree">
+      <div className="v3-nav-list-head">
+        <span>{categoryField.label}</span>
+        <span className="v3-nav-list-count">{categories.length}</span>
+        <button
+          title={categoryField.addLabel ?? 'Add category'}
+          aria-label={categoryField.addLabel ?? 'Add category'}
+          disabled={atMax}
+          onClick={() => {
+            if (!atMax) actions.addListItem(section.id, categoryField.path, categoryField.template())
+          }}
+        >
+          <Ph_ name="Plus" size={16} />
+        </button>
+      </div>
+      {categories.map((category, categoryIndex) => {
+        const categoryTitle = String(category?.[categoryField.itemTitle] ?? '') || `Category ${categoryIndex + 1}`
+        const categoryKey = apiCategoryKey(categoryTitle)
+        const categoryApis = apis
+          .map((api, apiIndex) => ({ api, apiIndex }))
+          .filter(({ api }) => apiCategoryKey(api?.category) === categoryKey)
+        const popupKey: PopupKey = `item-${categoryGroupIndex}-${categoryIndex}`
+        return (
+          <div className={`v3-list-node is-nav ${categoryApis.length ? 'has-children' : ''}`} key={categoryIndex}>
+            <div
+              className="v3-list-item v3-featured-api-category"
+              role="button"
+              tabIndex={0}
+              data-popup-key={popupKey}
+              onClick={(event) => openPopup(popupKey, event.currentTarget)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') openPopup(popupKey, event.currentTarget)
+              }}
+            >
+              <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
+              <span className="v3-list-item-title">{categoryTitle}</span>
+              <span className="v3-list-tools" onClick={(event) => event.stopPropagation()}>
+                <button
+                  title={`Add API to ${categoryTitle}`}
+                  aria-label={`Add API to ${categoryTitle}`}
+                  onClick={() => actions.addListItem(section.id, apiField.path, {
+                    ...apiField.template(),
+                    category: categoryTitle,
+                  })}
+                >
+                  <Ph_ name="Plus" size={14} />
+                </button>
+              </span>
+              <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
+            </div>
+            {categoryApis.map(({ api, apiIndex }) => {
+              const apiPopupKey: PopupKey = `item-${apiGroupIndex}-${apiIndex}`
+              const apiTitle = String(api?.[apiField.itemTitle] ?? '') || `API ${apiIndex + 1}`
+              return (
+                <div
+                  className="v3-list-item v3-nav-child v3-featured-api-child"
+                  key={apiIndex}
+                  role="button"
+                  tabIndex={0}
+                  data-popup-key={apiPopupKey}
+                  onClick={(event) => openPopup(apiPopupKey, event.currentTarget)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') openPopup(apiPopupKey, event.currentTarget)
+                  }}
+                >
+                  <span className="v3-nav-child-branch" aria-hidden="true" />
+                  <span className="v3-list-item-title">{apiTitle}</span>
+                  <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function V3ActionGroup({
   section,
   group,
@@ -547,13 +872,16 @@ function V3ActionGroup({
   }
 
   return (
-    <div className="v3-inline-group v3-action-group">
+    <div className={`v3-inline-group v3-action-group ${group.title === 'Buttons' ? 'has-section-divider' : ''}`}>
       <div className="v3-inline-title">{group.title}</div>
       <div className="v3-action-list">
         {actionFields.map((field) => {
           const fieldIndex = group.fields.indexOf(field)
           const key: PopupKey = `action-${groupIndex}-${fieldIndex}`
-          const enabled = Boolean((section.props as any)[field.path])
+          const rawEnabled = (section.props as any)[field.path]
+          const enabled = section.type === 'contact' && field.path === 'showCta'
+            ? rawEnabled !== false
+            : Boolean(rawEnabled)
           const label = togglePopupLabel(section.type, field)
           return (
             <div

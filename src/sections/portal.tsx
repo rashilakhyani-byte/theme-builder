@@ -1184,7 +1184,7 @@ export function PortalContact({ p }: { p: P; variant: string }) {
       <div className="ct-copy">
         <Ed path="title" as="h2" className="ct-title" multiline />
         <Ed path="sub" as="p" className="ct-sub" multiline />
-        <Ed path="cta" as="button" className="btn btn-ghost btn-pill" />
+        {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-ghost btn-pill" />}
       </div>
       <div className="ct-form">
         <Ed path="formTitle" as="h3" className="ct-form-title" />

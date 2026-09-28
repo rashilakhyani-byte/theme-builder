@@ -6,32 +6,6 @@ import { useDismiss } from '../ui/useDismiss'
 
 const ALL_FAMILIES = FONTS.map((f) => f.family)
 
-const PAIRINGS = [
-  { name: 'Classic', primary: 'Inter', secondary: 'Inter' },
-  { name: 'Editorial', primary: 'Fraunces', secondary: 'Inter' },
-  { name: 'Technical', primary: 'Space Grotesk', secondary: 'IBM Plex Sans' },
-  { name: 'Friendly', primary: 'Plus Jakarta Sans', secondary: 'DM Sans' },
-]
-
-/** Where each role lands on the published portal. Keep in step with canvas.css. */
-const USAGE = {
-  primary: [
-    'Hero and page titles',
-    'Section headings',
-    'Feature, pricing and card titles',
-    'FAQ questions',
-    'Stat figures and large quotes',
-    'Logo wordmark in the nav',
-  ],
-  secondary: [
-    'Lead and body paragraphs',
-    'Navigation and footer links',
-    'Buttons',
-    'Form labels, inputs and sign-in',
-    'Eyebrows, tags and captions',
-  ],
-}
-
 function FontSelect({
   label,
   help,
@@ -125,20 +99,6 @@ function FontSelect({
   )
 }
 
-function UsageGroup({ role, family, items }: { role: 'Primary' | 'Secondary'; family: string; items: string[] }) {
-  return (
-    <div className="tp-usage-group">
-      <div className="tp-usage-head">
-        <span className={`tp-badge ${role === 'Primary' ? 'is-primary' : ''}`}>{role}</span>
-        <span className="tp-usage-font" style={{ fontFamily: fontStack(family) }}>{family}</span>
-      </div>
-      <ul className="tp-usage-list">
-        {items.map((item) => <li key={item}>{item}</li>)}
-      </ul>
-    </div>
-  )
-}
-
 export function TypographyPanel() {
   const theme = useStore((s) => s.doc.theme)
   const uploadRef = useRef<HTMLInputElement>(null)
@@ -147,21 +107,11 @@ export function TypographyPanel() {
   const secondary = theme.fontSecondary ?? DEFAULT_FONT
   const customFamilies = useMemo(() => (theme.customFonts ?? []).map((font) => font.family), [theme.customFonts])
 
-  useFonts([primary, secondary, ...PAIRINGS.map((p) => p.primary), ...PAIRINGS.map((p) => p.secondary)])
+  useFonts([primary, secondary])
 
   return (
     <div className="sect">
-      <div className="tp-specimen">
-        <span className="tp-kicker">Preview</span>
-        <div className="tp-head" style={{ fontFamily: fontStack(primary) }}>
-          Build on an API developers trust
-        </div>
-        <p className="tp-body" style={{ fontFamily: fontStack(secondary) }}>
-          Headings carry the voice of your portal. The body face keeps long guides
-          and reference pages calm and easy to read.
-        </p>
-      </div>
-
+      <div className="sect-label">Typography</div>
       <div className="tp-upload-row">
         <div className="tp-upload-copy">
           <label>Custom fonts</label>
@@ -210,40 +160,6 @@ export function TypographyPanel() {
         customFamilies={customFamilies}
       />
 
-      <div className="field-ui">
-        <label>Suggested pairings</label>
-        <div className="tp-pairs">
-          {PAIRINGS.map((p) => {
-            const on = p.primary === primary && p.secondary === secondary
-            return (
-              <button
-                key={p.name}
-                type="button"
-                className={`tp-pair ${on ? 'on' : ''}`}
-                onClick={() => actions.setTheme({ fontPrimary: p.primary, fontSecondary: p.secondary })}
-              >
-                <span className="tp-pair-aa" style={{ fontFamily: fontStack(p.primary) }}>Aa</span>
-                <span className="tp-pair-name">{p.name}</span>
-                <span className="tp-pair-fonts">
-                  {p.primary === p.secondary ? p.primary : `${p.primary} + ${p.secondary}`}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="field-ui">
-        <label>Where your fonts appear</label>
-        <div className="tp-usage">
-          <UsageGroup role="Primary" family={primary} items={USAGE.primary} />
-          <UsageGroup role="Secondary" family={secondary} items={USAGE.secondary} />
-        </div>
-        <div className="hint">
-          Applies to every page of the published portal. Code samples and endpoint
-          paths stay monospaced, and the builder's own interface doesn't change.
-        </div>
-      </div>
     </div>
   )
 }

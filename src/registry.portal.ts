@@ -633,8 +633,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     fields: [
       { kind: 'text', path: 'title', label: 'Title', multiline: true },
       { kind: 'text', path: 'sub', label: 'Description', multiline: true },
-      button('cta', 'Button'),
-      { kind: 'divider', label: 'Contact form' },
+      { kind: 'divider', label: 'Buttons' },
+      optionalButton('showCta', 'cta', 'Primary button'),
+      { kind: 'divider', label: 'Form' },
       { kind: 'text', path: 'formTitle', label: 'Heading' },
       { kind: 'text', path: 'formSub', label: 'Supporting text' },
       {
@@ -653,7 +654,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     defaults: () => ({
       title: 'Start building today',
       sub: 'Explore the full API catalogue and see how our digital infrastructure can power your next project. Sign up to unlock specifications, interactive consoles and production keys.',
+      showCta: true,
       cta: 'View API Reference',
+      ctaHref: '#',
       formTitle: 'Reach out to us',
       formSub: 'Let’s build the future of banking, together.',
       fields: [
