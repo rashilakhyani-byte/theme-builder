@@ -1421,11 +1421,16 @@ select.control {
 
 .font-menu {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 50;
-  max-height: 320px; overflow-y: auto; padding: 4px;
+  max-height: 320px; display: flex; flex-direction: column; overflow: hidden; padding: 4px;
   background: var(--ui-step-up); border: 1px solid var(--ui-stroke); border-radius: 10px;
   box-shadow: 0 12px 32px -12px rgba(38, 38, 38, .22);
 }
-.font-menu-label { padding: 8px 10px 4px; font-family: var(--ui-mono); font-size: 11px; color: var(--ui-fg-4); }
+.font-menu-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; flex: none; margin-bottom: 4px; padding: 3px; border-radius: 8px; background: var(--ui-ground); }
+.font-menu-tabs button { height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--ui-fg-3); font-size: 12px; font-weight: 500; cursor: pointer; }
+.font-menu-tabs button:hover { color: var(--ui-fg); }
+.font-menu-tabs button.on { background: var(--ui-step-up); color: var(--ui-fg); box-shadow: 0 1px 3px rgba(38, 38, 38, .12); }
+.font-menu-options { min-height: 0; overflow-y: auto; }
+.font-menu-empty { padding: 24px 12px; color: var(--ui-fg-4); font-size: 12px; line-height: 18px; text-align: center; }
 .font-option {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 7px 10px; border: 0; border-radius: 7px; background: transparent;

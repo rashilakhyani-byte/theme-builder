@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { actions, useStore } from '../store'
-import { DEFAULT_FONT, FONTS, FONT_KINDS, fontStack, useFonts } from '../theme/fonts'
+import { DEFAULT_FONT, FONTS, fontStack, useFonts } from '../theme/fonts'
 import { Ph_ } from '../ui/Phosphor'
 import { useDismiss } from '../ui/useDismiss'
 
@@ -22,6 +22,7 @@ function FontSelect({
   onUpload: (file: File, select: (family: string) => void) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<'library' | 'custom'>('library')
   const ref = useRef<HTMLDivElement>(null)
   const uploadRef = useRef<HTMLInputElement>(null)
   const close = useCallback(() => setOpen(false), [])
@@ -40,7 +41,10 @@ function FontSelect({
           <button
             type="button"
             className="font-trigger"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              if (!open) setTab(def ? 'library' : 'custom')
+              setOpen((v) => !v)
+            }}
             aria-haspopup="listbox"
             aria-expanded={open}
           >
@@ -72,11 +76,17 @@ function FontSelect({
         </div>
 
         {open && (
-          <div className="font-menu" role="listbox" aria-label={label}>
-            {FONT_KINDS.map((kind) => (
-              <div key={kind}>
-                <div className="font-menu-label">{kind}</div>
-                {FONTS.filter((f) => f.kind === kind).map((f) => (
+          <div className="font-menu" aria-label={label}>
+            <div className="font-menu-tabs" role="tablist" aria-label="Font source">
+              <button type="button" role="tab" aria-selected={tab === 'library'} className={tab === 'library' ? 'on' : ''} onClick={() => setTab('library')}>
+                Library
+              </button>
+              <button type="button" role="tab" aria-selected={tab === 'custom'} className={tab === 'custom' ? 'on' : ''} onClick={() => setTab('custom')}>
+                Custom
+              </button>
+            </div>
+            <div className="font-menu-options" role="listbox" aria-label={`${label} ${tab} fonts`}>
+              {tab === 'library' && FONTS.map((f) => (
                   <button
                     key={f.family}
                     type="button"
@@ -92,13 +102,8 @@ function FontSelect({
                     <span className="font-option-name" style={{ fontFamily: fontStack(f.family) }}>{f.family}</span>
                     {f.family === value && <Ph_ name="Check" size={14} className="font-option-check" />}
                   </button>
-                ))}
-              </div>
-            ))}
-            {!!customFamilies.length && (
-              <div>
-                <div className="font-menu-label">Uploaded</div>
-                {customFamilies.map((family) => (
+              ))}
+              {tab === 'custom' && customFamilies.map((family) => (
                   <button
                     key={family}
                     type="button"
@@ -114,9 +119,11 @@ function FontSelect({
                     <span className="font-option-name" style={{ fontFamily: fontStack(family) }}>{family}</span>
                     {family === value && <Ph_ name="Check" size={14} className="font-option-check" />}
                   </button>
-                ))}
-              </div>
-            )}
+              ))}
+              {tab === 'custom' && !customFamilies.length && (
+                <div className="font-menu-empty">No custom fonts uploaded yet.</div>
+              )}
+            </div>
           </div>
         )}
       </div>
