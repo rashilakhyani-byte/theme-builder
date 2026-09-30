@@ -205,7 +205,6 @@ export function PortalNav({ p }: { p: P }) {
           >
             <Ed path="secondaryLabel" className="navlink pnav-login" />
             {p.secondaryNewTab && <Ph_ name="ArrowSquareOut" size={11} />}
-            {editing && restricted(actionAccess('secondary')) && <span className="pnav-access" title={accessTitle(actionAccess('secondary'))}><Ph_ name="LockKey" size={11} /></span>}
           </a>
         )}
         {p.showCta && (
@@ -218,7 +217,6 @@ export function PortalNav({ p }: { p: P }) {
           >
             <Ed path="ctaLabel" className="btn btn-primary btn-sm btn-pill" />
             {p.ctaNewTab && <Ph_ name="ArrowSquareOut" size={11} />}
-            {editing && restricted(actionAccess('cta')) && <span className="pnav-access" title={accessTitle(actionAccess('cta'))}><Ph_ name="LockKey" size={11} /></span>}
           </a>
         )}
       </div>
@@ -1201,7 +1199,7 @@ export function Resources({ p }: { p: P; variant: string }) {
         <div className="posts-row"><Post p={p} i={0} /><Post p={p} i={1} wide /></div>
         <div className="posts-row flip"><Post p={p} i={2} wide /><Post p={p} i={3} /></div>
       </div>
-      <div className="posts-cta"><Ed path="cta" as="button" className="btn btn-primary" /></div>
+      {p.showCta !== false && <div className="posts-cta"><Ed path="cta" as="button" className="btn btn-primary" /></div>}
     </div>
   )
 }
@@ -1362,6 +1360,7 @@ export function PortalFaq({ p }: { p: P; variant: string }) {
           )
         })}
       </div>
+      {p.showCta !== false && <div className="fq-cta"><Ed path="cta" as="button" className="btn btn-primary" /></div>}
     </div>
   )
 }

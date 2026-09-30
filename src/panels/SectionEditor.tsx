@@ -324,7 +324,18 @@ function PopupSectionEditor({
   }, [])
 
   useEffect(() => {
+    const root = editorRef.current
+    root?.querySelectorAll<HTMLElement>('[data-popup-key]').forEach((node) => {
+      node.classList.toggle('is-popup-active', node.dataset.popupKey === open)
+    })
+  }, [open])
+
+  useEffect(() => {
     if (!selectedPath) return
+    if (
+      (section.type === 'hero' && (selectedPath === 'showLogos' || selectedPath === 'logoHeading' || selectedPath.startsWith('logos[')))
+      || (section.type === 'partners' && (selectedPath === 'title' || selectedPath.startsWith('logos[')))
+    ) return
     const index = groups.findIndex((group) => group.fields.some((field) => fieldOwnsPath(field, selectedPath)))
     if (index < 0) return
     const isToggleGroup = groups[index].fields.length > 0
@@ -347,7 +358,7 @@ function PopupSectionEditor({
       : null
     if (match) {
       const itemIndex = Number(match[1])
-      const childMatch = selectedPath.match(/\.children\[(\d+)\]/)
+      const childMatch = selectedPath.match(/\.(?:children|links)\[(\d+)\]/)
       openPopup(childMatch ? `child-${index}-${itemIndex}-${Number(childMatch[1])}` : `item-${index}-${itemIndex}`)
     } else {
       openPopup(`group-${index}`)
@@ -368,8 +379,10 @@ function PopupSectionEditor({
   const item = itemField && itemIndex >= 0
     ? ((section.props as any)[itemField.path] ?? [])[itemIndex]
     : null
-  const childItem = childIndex >= 0 ? item?.children?.[childIndex] : null
-  const attributeFields = itemField?.itemFields.map((field) => (
+  const nestedListField = itemField?.itemFields.find((field): field is Extract<Field, { kind: 'list' }> => field.kind === 'list')
+  const childPath = section.type === 'footer' && itemField?.path === 'columns' ? 'links' : 'children'
+  const childItem = childIndex >= 0 ? item?.[childPath]?.[childIndex] : null
+  const attributeFields = itemField?.itemFields.filter((field) => !(section.type === 'footer' && itemField.path === 'columns' && field.kind === 'list')).map((field) => (
     field.kind === 'toggle' && field.path === 'dropdown' ? { ...field, children: undefined } : field
   ))
   const actionGroupIndex = actionMatch ? Number(actionMatch[1]) : -1
@@ -385,7 +398,7 @@ function PopupSectionEditor({
     : open === 'background'
       ? 'Background'
       : itemField
-        ? String((childMatch ? childItem : item)?.[itemField.itemTitle] ?? '') || `${childMatch ? 'Child' : 'Item'} ${childMatch ? childIndex + 1 : itemIndex + 1}`
+        ? String((childMatch ? childItem?.[nestedListField?.itemTitle ?? 'label'] : item?.[itemField.itemTitle]) ?? '') || `${childMatch ? 'Child' : 'Item'} ${childMatch ? childIndex + 1 : itemIndex + 1}`
         : actionField
           ? actionTitle
           : groups[groupIndex]?.title === 'Form header'
@@ -394,7 +407,7 @@ function PopupSectionEditor({
               ? 'Button'
               : groups[groupIndex]?.title ?? ''
   const popupTop = anchor
-    ? Math.max(12, Math.min(anchor.top, window.innerHeight - 332))
+    ? Math.max(12, Math.min(anchor.top, window.innerHeight - 512))
     : 12
 
   return (
@@ -413,6 +426,40 @@ function PopupSectionEditor({
           const list = group.fields.length === 1 && group.fields[0].kind === 'list'
             ? group.fields[0]
             : null
+          if (section.type === 'hero' && group.title === 'Logos') {
+            const toggle = group.fields.find((field): field is Extract<Field, { kind: 'toggle' }> => field.kind === 'toggle' && field.path === 'showLogos')
+            const logoList = toggle?.children?.find((field): field is Extract<Field, { kind: 'list' }> => field.kind === 'list' && field.path === 'logos')
+            const headingFields = toggle?.children?.filter((field) => field.kind !== 'list') ?? []
+            return toggle && logoList ? (
+              <V3DirectLogoGroup
+                key="hero-logos"
+                section={section}
+                title="Logos"
+                field={logoList}
+                headingFields={headingFields}
+                toggleField={toggle}
+              />
+            ) : null
+          }
+          if (section.type === 'partners' && group.title === 'Content') {
+            return (
+              <V3InlineGroup key="partner-heading" title="Logo heading">
+                <FieldList sectionId={section.id} fields={group.fields.map((field) => (
+                  field.kind === 'text' ? { ...field, label: '' } : field
+                ))} />
+              </V3InlineGroup>
+            )
+          }
+          if (section.type === 'partners' && list?.path === 'logos') {
+            return (
+              <V3DirectLogoGroup
+                key="partner-logos"
+                section={section}
+                title="Logos"
+                field={list}
+              />
+            )
+          }
           if (section.type === 'awards' && group.title === 'Awards' && group.fields[0]?.kind === 'list') {
             return (
               <V3ListGroup
@@ -571,7 +618,7 @@ function PopupSectionEditor({
           style={{
             left: Math.min(anchor.right + 10, window.innerWidth - 354),
             top: popupTop,
-            maxHeight: window.innerHeight - popupTop - 12,
+            maxHeight: Math.min(500, window.innerHeight - 24),
           }}
         >
             <div className="v3-popup-head">
@@ -611,8 +658,10 @@ function PopupSectionEditor({
                 ) : (
                   <FieldList
                     sectionId={section.id}
-                    fields={attributeFields ?? itemField.itemFields}
-                    prefix={`${itemField.path}[${itemIndex}].`}
+                    fields={childMatch && nestedListField ? nestedListField.itemFields : (attributeFields ?? itemField.itemFields)}
+                    prefix={childMatch
+                      ? `${itemField.path}[${itemIndex}].${childPath}[${childIndex}].`
+                      : `${itemField.path}[${itemIndex}].`}
                   />
                 )
               )}
@@ -628,7 +677,7 @@ function PopupSectionEditor({
                     close()
                     actions.removeListItem(
                       section.id,
-                      childMatch ? `${itemField.path}[${itemIndex}].children` : itemField.path,
+                      childMatch ? `${itemField.path}[${itemIndex}].${childPath}` : itemField.path,
                       childMatch ? childIndex : itemIndex,
                     )
                     if (isNavigation && childMatch && (item?.children?.length ?? 0) === 1) {
@@ -993,7 +1042,6 @@ function V3ActionGroup({
             >
               <span className="v3-action-copy">
                 <strong>{label}</strong>
-                <span>{enabled ? 'Enabled' : 'Disabled'}</span>
               </span>
               <button
                 type="button"
@@ -1027,6 +1075,78 @@ function V3InlineGroup({ title, children }: { title: string; children: React.Rea
   )
 }
 
+function V3DirectLogoGroup({
+  section,
+  title,
+  field,
+  headingFields = [],
+  toggleField,
+}: {
+  section: Section
+  title: string
+  field: Extract<Field, { kind: 'list' }>
+  headingFields?: Field[]
+  toggleField?: Extract<Field, { kind: 'toggle' }>
+}) {
+  const items = ((section.props as any)[field.path] ?? []) as any[]
+  const enabled = toggleField ? Boolean((section.props as any)[toggleField.path]) : true
+  const atMax = field.max !== undefined && items.length >= field.max
+  const imageFields = field.itemFields
+    .filter((itemField): itemField is Extract<Field, { kind: 'image' }> => itemField.kind === 'image')
+    .map((itemField) => ({ ...itemField, label: '' }))
+
+  return (
+    <div className="v3-inline-group v3-direct-logo-group">
+      <div className="v3-direct-logo-head">
+        <div className="v3-inline-title">{title}</div>
+        {toggleField && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-label={toggleField.label}
+            className={`switch ${enabled ? 'on' : ''}`}
+            onClick={() => actions.setProp(section.id, toggleField.path, !enabled)}
+          >
+            <span />
+          </button>
+        )}
+      </div>
+      {enabled && (
+        <div className="v3-direct-logo-body">
+          {!!headingFields.length && <FieldList sectionId={section.id} fields={headingFields} />}
+          {items.map((_, index) => (
+            <div className="v3-direct-logo-card" key={index}>
+              <div className="v3-direct-logo-card-head">
+                <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
+                <strong>Logo {index + 1}</strong>
+                <button
+                  type="button"
+                  title={`Delete logo ${index + 1}`}
+                  aria-label={`Delete logo ${index + 1}`}
+                  onClick={() => actions.removeListItem(section.id, field.path, index)}
+                >
+                  <Icon name="trash" size={12} />
+                </button>
+              </div>
+              <FieldList sectionId={section.id} fields={imageFields} prefix={`${field.path}[${index}].`} />
+            </div>
+          ))}
+          <button
+            className="v3-list-add"
+            disabled={atMax}
+            onClick={() => {
+              if (!atMax) actions.addListItem(section.id, field.path, field.template())
+            }}
+          >
+            <Ph_ name="Plus" size={13} /> {field.addLabel ?? 'Add logo'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function V3ListGroup({
   section,
   group,
@@ -1045,12 +1165,17 @@ function V3ListGroup({
   const items = ((section.props as any)[field.path] ?? []) as any[]
   const atMax = field.max !== undefined && items.length >= field.max
   const isNavLinks = section.type === 'nav' && field.path === 'links'
+  const isFooterColumns = section.type === 'footer' && field.path === 'columns'
+  const isNestedTree = isNavLinks || isFooterColumns
   const dropdownToggle = isNavLinks
     ? field.itemFields.find((itemField) => itemField.kind === 'toggle' && itemField.path === 'dropdown')
     : null
-  const childList = dropdownToggle?.kind === 'toggle'
-    ? dropdownToggle.children?.find((itemField) => itemField.kind === 'list')
-    : null
+  const childList = isFooterColumns
+    ? field.itemFields.find((itemField): itemField is Extract<Field, { kind: 'list' }> => itemField.kind === 'list' && itemField.path === 'links')
+    : dropdownToggle?.kind === 'toggle'
+      ? dropdownToggle.children?.find((itemField) => itemField.kind === 'list')
+      : null
+  const childPath = isFooterColumns ? 'links' : 'children'
 
   return (
     <div className="v3-list-group">
@@ -1078,7 +1203,7 @@ function V3ListGroup({
         const title = String(item?.[field.itemTitle] ?? '') || `Item ${index + 1}`
         return (
           <div
-            className={`v3-list-node ${isNavLinks ? 'is-nav' : ''} ${isNavLinks && item?.children?.length ? 'has-children' : ''}`}
+            className={`v3-list-node ${isNestedTree ? 'is-nav' : ''} ${isNestedTree && item?.[childPath]?.length ? 'has-children' : ''}`}
             key={index}
           >
             <div
@@ -1094,15 +1219,15 @@ function V3ListGroup({
               <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
               <span className="v3-list-item-title">{title}</span>
               <span className="v3-list-tools" onClick={(event) => event.stopPropagation()}>
-                {isNavLinks ? (
+                {isNestedTree ? (
                 <button
-                  title="Add child link"
+                  title="Add link"
                   aria-label={`Add child link to ${title}`}
-                  disabled={!childList || (childList.max !== undefined && (item?.children?.length ?? 0) >= childList.max)}
+                  disabled={!childList || (childList.max !== undefined && (item?.[childPath]?.length ?? 0) >= childList.max)}
                   onClick={() => {
                     if (!childList) return
-                    if (!item?.dropdown) actions.setProp(section.id, `${field.path}[${index}].dropdown`, true)
-                    actions.addListItem(section.id, `${field.path}[${index}].children`, childList.template())
+                    if (isNavLinks && !item?.dropdown) actions.setProp(section.id, `${field.path}[${index}].dropdown`, true)
+                    actions.addListItem(section.id, `${field.path}[${index}].${childPath}`, childList.template())
                   }}
                 >
                   <Icon name="plus" size={13} />
@@ -1115,8 +1240,8 @@ function V3ListGroup({
               </span>
               <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
             </div>
-            {isNavLinks && <V3IndentConnector count={(item?.children ?? []).length} />}
-            {isNavLinks && (item?.children ?? []).map((child: any, childIndex: number) => {
+            {isNestedTree && <V3IndentConnector count={(item?.[childPath] ?? []).length} />}
+            {isNestedTree && (item?.[childPath] ?? []).map((child: any, childIndex: number) => {
               const childKey: PopupKey = `child-${groupIndex}-${index}-${childIndex}`
               const childTitle = String(child?.label ?? '') || `Child ${childIndex + 1}`
               return (

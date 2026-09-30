@@ -5,7 +5,6 @@ import { Ph_ } from '../ui/Phosphor'
 import { SectionPreview } from './SectionPreview'
 import { TemplatePreview } from './TemplatePreview'
 
-const BLANK = 'blank'
 type Approach = 'full' | 'split'
 type FullView = 'gallery' | 'preview'
 
@@ -19,14 +18,16 @@ export function StartScreen() {
   const [choice, setChoice] = useState<string>(TEMPLATES[0].id)
   const [approach, setApproach] = useState<Approach>(() => version === 'v3' ? 'split' : 'full')
   const [fullView, setFullView] = useState<FullView>('gallery')
+  const [dismissed, setDismissed] = useState(false)
   const activeApproach: Approach = version === 'v3' ? 'split' : approach
   const template = TEMPLATES.find((t) => t.id === choice)
 
   const go = () => actions.startWith(template ? docFromTemplate(template) : blankDoc())
+  const createFromScratch = () => actions.startWith(blankDoc())
 
   const chooseForFullPreview = (id: string) => {
     setChoice(id)
-    if (id !== BLANK) setFullView('preview')
+    setFullView('preview')
   }
 
   const approachSwitch = (
@@ -75,25 +76,10 @@ export function StartScreen() {
             </span>
             <span className="start-name">
               {t.short}
-              {on && <Ph_ name="CheckCircle" size={16} weight="fill" className="start-check" />}
             </span>
           </button>
         )
       })}
-
-      <button
-        className={`start-card ${choice === BLANK ? 'on' : ''}`}
-        onClick={() => chooseForFullPreview(BLANK)}
-        aria-pressed={choice === BLANK}
-      >
-        <span className="start-art start-blank-art">
-          <span className="start-blank-mark"><Ph_ name="Plus" size={22} /></span>
-        </span>
-        <span className="start-name">
-          Blank canvas
-          {choice === BLANK && <Ph_ name="CheckCircle" size={16} weight="fill" className="start-check" />}
-        </span>
-      </button>
     </div>
   )
 
@@ -111,6 +97,8 @@ export function StartScreen() {
     </div>
   )
 
+  if (dismissed) return null
+
   return (
     <div className="overlay start-overlay">
       <div className={`modal start-modal ${(activeApproach === 'split' || fullView === 'preview') ? 'is-wide' : ''}`}>
@@ -121,7 +109,17 @@ export function StartScreen() {
               Pick a template to customise, or start from a blank canvas and drag sections in.
             </div>
           </div>
-          {version !== 'v3' && approachSwitch}
+          <div className="start-head-actions">
+            {version !== 'v3' && approachSwitch}
+            <button
+              className="start-close"
+              title="Close"
+              aria-label="Close template selection"
+              onClick={() => setDismissed(true)}
+            >
+              <Ph_ name="X" size={18} />
+            </button>
+          </div>
         </div>
 
         {activeApproach === 'full' ? (
@@ -130,7 +128,7 @@ export function StartScreen() {
               <>
                 <div className="start-detail-bar">
                   <button className="btn-ui outline" onClick={() => setFullView('gallery')}>
-                    <Ph_ name="ArrowLeft" size={15} /> Back to templates
+                    <Ph_ name="ArrowLeft" size={15} /> Back to Templates
                   </button>
                   {previewHeader}
                 </div>
@@ -156,25 +154,15 @@ export function StartScreen() {
                       <SectionPreview
                         type={type}
                         variant={variant}
-                        maxHeight={52}
+                        maxHeight={112}
                         fit="cover"
                         theme={{ accent: t.accent, chrome: t.chrome, fontPrimary: t.fontPrimary, fontSecondary: t.fontSecondary }}
                       />
                     </span>
                     <span><b>{t.short}</b><small>{t.tagline}</small></span>
-                    {choice === t.id && <Ph_ name="CheckCircle" size={16} weight="fill" />}
                   </button>
                 )
               })}
-              <button
-                className={`start-template-row blank ${choice === BLANK ? 'on' : ''}`}
-                onClick={() => setChoice(BLANK)}
-                aria-pressed={choice === BLANK}
-              >
-                <span className="start-template-blank"><Ph_ name="Plus" size={18} /></span>
-                <span><b>Blank canvas</b><small>Start from scratch</small></span>
-                {choice === BLANK && <Ph_ name="CheckCircle" size={16} weight="fill" />}
-              </button>
             </aside>
             <div className="start-split-main">
               {template ? (
@@ -204,11 +192,14 @@ export function StartScreen() {
         <div className="modal-foot">
           {activeApproach === 'full' && fullView === 'gallery' && template && (
             <button className="btn-ui outline" onClick={() => setFullView('preview')}>
-              <Ph_ name="Eye" size={15} /> Preview selected
+              <Ph_ name="Eye" size={15} /> Preview Selected
             </button>
           )}
+          <button className="btn-ui outline start-scratch" onClick={createFromScratch}>
+            Create From Scratch
+          </button>
           <button className="btn-ui primary start-go" onClick={go}>
-            {template ? 'Use this template' : 'Start from blank'}
+            Use This Template
             <Ph_ name="ArrowRight" size={15} />
           </button>
         </div>

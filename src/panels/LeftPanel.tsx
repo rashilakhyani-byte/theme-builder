@@ -88,7 +88,7 @@ function PanelSwitch() {
 
       {open && tab === 'page' && (
         <div className="page-menu" role="menu">
-          {doc.pageOrder.map((id) => {
+          {doc.pageOrder.filter((id) => id === 'home' || id === 'signup' || id === 'contact').map((id) => {
             const p = doc.pages[id]
             return (
               <button
