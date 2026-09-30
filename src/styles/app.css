@@ -1394,13 +1394,30 @@ select.control {
 .tp-upload-btn:hover { border-color: var(--ui-brand); background: var(--ui-brand-tint); color: var(--ui-brand); }
 
 .font-select { position: relative; }
-.font-trigger { cursor: pointer; font: inherit; height: 36px; }
-.font-trigger.open { background: var(--ui-step-up); border-color: var(--ui-brand); box-shadow: 0 0 0 3px rgba(2, 101, 220, .14); }
+.font-combined {
+  display: grid; grid-template-columns: minmax(0, 1fr) 44px; min-height: 44px;
+  overflow: hidden; border: 1px solid var(--ui-stroke); border-radius: 10px; background: var(--ui-step-up);
+  transition: border-color .12s, box-shadow .12s;
+}
+.font-combined:hover { border-color: var(--ui-stroke-hover); }
+.font-combined.open { border-color: var(--ui-brand); box-shadow: 0 0 0 3px rgba(2, 101, 220, .14); }
+.font-trigger {
+  display: flex; align-items: center; gap: 9px; min-width: 0; padding: 0 12px;
+  border: 0; background: transparent; cursor: pointer; text-align: left;
+}
+.font-trigger-aa { flex: none; font-size: 16px; line-height: 1; color: var(--ui-fg-3); }
 .font-trigger-name {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 14px; font-weight: 500; color: var(--ui-fg);
 }
-.font-trigger-kind { font-size: 11px; color: var(--ui-fg-4); white-space: nowrap; }
+.font-trigger-kind { flex: none; font-size: 12px; color: var(--ui-fg-3); white-space: nowrap; }
+.font-trigger-caret { flex: none; color: var(--ui-fg-4); }
+.font-upload-action {
+  display: grid; place-items: center; width: 44px; border: 0; border-left: 1px solid var(--ui-stroke);
+  background: transparent; color: var(--ui-fg-2); cursor: pointer;
+}
+.font-upload-action:hover { background: var(--ui-ground); color: var(--ui-fg); }
+.font-trigger:focus-visible, .font-upload-action:focus-visible { outline: 2px solid var(--ui-brand); outline-offset: -2px; }
 
 .font-menu {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 50;

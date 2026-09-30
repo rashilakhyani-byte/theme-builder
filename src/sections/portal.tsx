@@ -1247,7 +1247,7 @@ export function PortalFooter({ p }: { p: P; variant: string }) {
           {legalLinks.map((_, i) => (
             <span key={i}>
               {i > 0 && <span className="pfoot-sep"> · </span>}
-              <Ed path={`legalLinks[${i}].label`} as="a" />
+              <a href={legalLinks[i]?.href || '#'}><Ed path={`legalLinks[${i}].label`} /></a>
             </span>
           ))}
         </div>

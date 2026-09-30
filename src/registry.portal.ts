@@ -762,8 +762,11 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       { kind: 'text', path: 'legal', label: 'Legal line' },
       {
         kind: 'list', path: 'legalLinks', label: 'Legal links', itemTitle: 'label', addLabel: 'Add link',
-        itemFields: [{ kind: 'text', path: 'label', label: 'Label' }],
-        template: () => ({ label: 'Policy' }),
+        itemFields: [
+          { kind: 'text', path: 'label', label: 'Label' },
+          { kind: 'text', path: 'href', label: 'Link', placeholder: 'https:// or /path' },
+        ],
+        template: () => ({ label: 'Policy', href: '#' }),
       },
     ],
     defaults: () => ({
@@ -781,7 +784,11 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         { title: 'Resources', links: [link('Free eBooks'), link('Development tutorial'), link('How-to blog')] },
       ],
       legal: '© 2026 northwind.dev',
-      legalLinks: [{ label: 'Privacy statement' }, { label: 'Terms & conditions' }, { label: 'Policies' }],
+      legalLinks: [
+        { label: 'Privacy statement', href: '#' },
+        { label: 'Terms & conditions', href: '#' },
+        { label: 'Policies', href: '#' },
+      ],
     }),
   },
 
