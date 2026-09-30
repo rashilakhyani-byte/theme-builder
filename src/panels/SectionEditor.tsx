@@ -398,14 +398,14 @@ function PopupSectionEditor({
     : 12
 
   return (
-    <div className="v3-editor" ref={editorRef}>
+    <div className={`v3-editor is-${section.type}`} ref={editorRef}>
       <div className="v3-setting-list">
         {def.variants.length > 1 && (
           <V3InlineGroup title="Layout">
             <VariantPicker section={section} />
           </V3InlineGroup>
         )}
-        <div className="v3-inline-group">
+        <div className={`v3-inline-group v3-background-group ${isNavigation ? 'is-navigation' : ''}`}>
           <div className="v3-inline-title">Background</div>
           <SurfacePicker sectionId={section.id} current={section.surface} />
         </div>
@@ -490,7 +490,7 @@ function PopupSectionEditor({
               .filter((field) => field.kind === 'image')
               .map((field) => ({ ...field, label: '' }))
             return (
-              <div className="v3-inline-group has-section-divider" key={`${group.title}-${index}`}>
+              <div className="v3-inline-group v3-nav-logo-group has-section-divider" key={`${group.title}-${index}`}>
                 <div className="v3-inline-title">Logo</div>
                 <div className="v3-inline-body">
                   <FieldList sectionId={section.id} fields={logoFields} />
@@ -830,6 +830,28 @@ function apiCategoryKey(value: unknown) {
   return String(value ?? '').trim().toLowerCase().replace(/\s+apis?$/, '')
 }
 
+/** Smooth Figma-style hierarchy connector. Row geometry is shared with the
+ * CSS below, so every arrow lands at the exact centre of its child card. */
+function V3IndentConnector({ count }: { count: number }) {
+  if (!count) return null
+  const centers = Array.from({ length: count }, (_, index) => 74 + index * 50)
+  const last = centers[centers.length - 1]
+  const branches = centers.slice(0, -1).map((center) => `M12 ${center}H34.5`).join(' ')
+  const arrows = centers.map((center) => `M30.5 ${center - 4}L34.5 ${center}L30.5 ${center + 4}`).join(' ')
+  const trunk = `M12 46V${last - 4}Q12 ${last} 16 ${last}H34.5`
+
+  return (
+    <svg
+      className="v3-indent-connector"
+      viewBox={`0 0 34.5 ${46 + count * 50}`}
+      style={{ height: 46 + count * 50 }}
+      aria-hidden="true"
+    >
+      <path d={`${trunk} ${branches} ${arrows}`} />
+    </svg>
+  )
+}
+
 function V3FeaturedApisGroup({
   section,
   categoryField,
@@ -900,6 +922,7 @@ function V3FeaturedApisGroup({
               </span>
               <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
             </div>
+            <V3IndentConnector count={categoryApis.length} />
             {categoryApis.map(({ api, apiIndex }) => {
               const apiPopupKey: PopupKey = `item-${apiGroupIndex}-${apiIndex}`
               const apiTitle = String(api?.[apiField.itemTitle] ?? '') || `API ${apiIndex + 1}`
@@ -915,7 +938,6 @@ function V3FeaturedApisGroup({
                     if (event.key === 'Enter') openPopup(apiPopupKey, event.currentTarget)
                   }}
                 >
-                  <span className="v3-nav-child-branch" aria-hidden="true" />
                   <span className="v3-list-item-title">{apiTitle}</span>
                   <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
                 </div>
@@ -1093,6 +1115,7 @@ function V3ListGroup({
               </span>
               <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
             </div>
+            {isNavLinks && <V3IndentConnector count={(item?.children ?? []).length} />}
             {isNavLinks && (item?.children ?? []).map((child: any, childIndex: number) => {
               const childKey: PopupKey = `child-${groupIndex}-${index}-${childIndex}`
               const childTitle = String(child?.label ?? '') || `Child ${childIndex + 1}`
@@ -1108,7 +1131,6 @@ function V3ListGroup({
                     if (event.key === 'Enter') openPopup(childKey, event.currentTarget)
                   }}
                 >
-                  <span className="v3-nav-child-branch" aria-hidden="true" />
                   <span className="v3-list-item-title">{childTitle}</span>
                   <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
                 </div>

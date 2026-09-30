@@ -29,6 +29,7 @@ export const SectionPreview = memo(function SectionPreview({
   props,
   surface,
   maxHeight = 200,
+  fit = 'contain',
   theme: override,
 }: {
   type: SectionType
@@ -36,6 +37,8 @@ export const SectionPreview = memo(function SectionPreview({
   props?: Record<string, any>
   surface?: Surface
   maxHeight?: number
+  /** Cover crops the live section so compact thumbnails fill their frame. */
+  fit?: 'contain' | 'cover'
   /** Preview a theme the document isn't using yet — a template card. */
   theme?: { accent: string; chrome: 'subtle' | 'solid' | 'neutral'; fontPrimary?: string; fontSecondary?: string }
 }) {
@@ -75,15 +78,18 @@ export const SectionPreview = memo(function SectionPreview({
       }
     : undefined
 
-  const scale = size.w ? size.w / VIRTUAL_WIDTH : 0
+  const widthScale = size.w ? size.w / VIRTUAL_WIDTH : 0
+  const scale = fit === 'cover' && size.h
+    ? Math.max(widthScale, maxHeight / size.h)
+    : widthScale
   const full = size.h * scale
-  const clipped = full > maxHeight
+  const clipped = fit === 'contain' && full > maxHeight
 
   return (
     <div
       ref={box}
       className={`sp ${clipped ? 'clipped' : ''}`}
-      style={{ height: scale ? Math.min(full, maxHeight) : maxHeight * 0.6 }}
+      style={{ height: fit === 'cover' ? maxHeight : scale ? Math.min(full, maxHeight) : maxHeight * 0.6 }}
       aria-hidden="true"
       {...INERT}
     >
@@ -95,6 +101,7 @@ export const SectionPreview = memo(function SectionPreview({
         style={{
           ...tokens,
           width: VIRTUAL_WIDTH,
+          left: fit === 'cover' ? (size.w - VIRTUAL_WIDTH * scale) / 2 : 0,
           transform: `scale(${scale})`,
           visibility: scale ? 'visible' : 'hidden',
           '--radius': `${theme.radius}px`,

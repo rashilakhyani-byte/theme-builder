@@ -156,7 +156,8 @@ export function StartScreen() {
                       <SectionPreview
                         type={type}
                         variant={variant}
-                        maxHeight={72}
+                        maxHeight={52}
+                        fit="cover"
                         theme={{ accent: t.accent, chrome: t.chrome, fontPrimary: t.fontPrimary, fontSecondary: t.fontSecondary }}
                       />
                     </span>
