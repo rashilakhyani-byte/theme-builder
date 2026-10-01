@@ -40,6 +40,33 @@
   --brand-tint-hover: var(--accent-a4);
   --brand-border: var(--accent-a7);
   --focus-ring: var(--accent-8);
+  /* --- semantic feedback and HTTP method roles ------------------------- */
+  --status-success: #007a4d;
+  --status-success-strong: #2fb880;
+  --status-success-bright: #2fb880;
+  --status-success-bg: #dff7e9;
+  --status-success-bg-dark: #132d21;
+  --status-danger: #d31510;
+  --status-danger-strong: #ff7c65;
+  --status-danger-bright: #ff7c65;
+  --status-danger-bg: #ffebe7;
+  --status-danger-bg-dark: #3b1219;
+  --status-info: #0265dc;
+  --status-info-bright: #59a7f6;
+  --status-info-bg: #e0f2ff;
+  --status-info-bg-dark: #0d2847;
+  --status-warning: #856600;
+  --status-warning-bright: #c49f00;
+  --status-warning-bg: #f8e750;
+  --status-warning-bg-dark: #302008;
+  --method-get: #5893f4;
+  --method-post: #2bc564;
+  --method-put: #28c7b6;
+  --method-patch: #d89422;
+  --method-delete: #f05c76;
+  --method-options: #2ab9d1;
+  --method-head: #b16df1;
+  --method-trace: #7ba1d7;
   /* --- always-dark code panel, hue-matched to the brand ----------------- */
   --code-bg: var(--dark-gray-2);
   --code-bg-header: var(--dark-gray-3);

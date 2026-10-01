@@ -94,7 +94,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-weight: 750;
+  font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -133,7 +133,7 @@
   color: var(--text-hi);
   border: 1px solid var(--chrome-line);
   font-size: 12px;
-  font-weight: 560;
+  font-weight: 500;
 }
 .p-topbar-cta:hover { background: var(--gray-2); }
 
@@ -187,8 +187,8 @@
   color: var(--chrome-active-fg);
 }
 .p-rail-label {
-  font-size: 10px;
-  font-weight: 520;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.01em;
   line-height: 1.1;
   text-align: center;
@@ -258,7 +258,7 @@
   border-radius: 7px;
   color: var(--chrome-fg);
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 400;
   text-align: left;
   transition: background 120ms ease, color 120ms ease;
 }
@@ -280,7 +280,7 @@
   align-items: center;
   gap: 8px;
   padding: 14px 8px 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--chrome-fg);
 }
@@ -302,7 +302,7 @@
   border-radius: 7px;
   color: var(--chrome-dim);
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 400;
   text-align: left;
   transition: background 120ms ease, color 120ms ease;
 }
@@ -310,7 +310,7 @@
 .p-tree-leaf[aria-current='page'] {
   background: var(--chrome-active-bg);
   color: var(--chrome-active-fg);
-  font-weight: 560;
+  font-weight: 500;
 }
 .p-tree-leaf[aria-current='page']::before {
   content: '';
@@ -362,7 +362,7 @@
   background: var(--surface-page);
   color: var(--text-default);
   font-size: 12px;
-  font-weight: 520;
+  font-weight: 500;
 }
 .p-chip-btn:hover { background: var(--surface-sunken); color: var(--text-hi); }
 .p-cardbar-spacer { flex: 1; }
@@ -380,7 +380,7 @@
   border-radius: 7px;
   color: var(--text-default);
   font-size: 12px;
-  font-weight: 520;
+  font-weight: 500;
 }
 .p-seg button[aria-pressed='true'] {
   background: var(--surface-page);
@@ -389,7 +389,7 @@
   box-shadow: 0 1px 2px var(--gray-a4);
 }
 
-.p-saving { font-size: 11.5px; color: var(--text-subtle); }
+.p-saving { font-size: 12px; color: var(--text-subtle); }
 
 .p-publish {
   display: inline-flex;
@@ -400,7 +400,7 @@
   border-radius: 8px;
   background: var(--brand-solid);
   color: var(--brand-on-solid);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 .p-publish:hover { background: var(--brand-solid-hover); }
