@@ -1143,6 +1143,7 @@ function V3FeaturedApisGroup({
                     if (event.key === 'Enter') openPopup(apiPopupKey, event.currentTarget)
                   }}
                 >
+                  <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
                   <span className="v3-list-item-title">{apiTitle}</span>
                   <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
                 </div>
@@ -1412,6 +1413,7 @@ function V3ListGroup({
                     if (event.key === 'Enter') openPopup(childKey, event.currentTarget)
                   }}
                 >
+                  <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
                   <span className="v3-list-item-title">{childTitle}</span>
                   <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
                 </div>
