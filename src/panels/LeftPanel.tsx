@@ -91,22 +91,38 @@ function PanelSwitch() {
           {doc.pageOrder.filter((id) => id === 'home' || id === 'signup' || id === 'contact').map((id) => {
             const p = doc.pages[id]
             return (
-              <button
-                key={id}
-                role="menuitem"
-                className={`page-item ${id === pageId ? 'on' : ''}`}
-                onClick={() => {
-                  actions.setPage(id)
-                  setOpen(false)
-                }}
-              >
-                <Ph_ name={PAGE_ICONS[id]} size={16} />
-                <span className="page-item-name">{p.name}</span>
-                <span className="page-item-meta">
-                  {p.body.length} {p.body.length === 1 ? 'section' : 'sections'}
-                </span>
-                {id === pageId && <Ph_ name="Check" size={14} className="page-item-check" />}
-              </button>
+              <div key={id} className={`page-row ${p.disabled ? 'is-off' : ''}`}>
+                <button
+                  role="menuitem"
+                  className={`page-item ${id === pageId ? 'on' : ''}`}
+                  onClick={() => {
+                    actions.setPage(id)
+                    setOpen(false)
+                  }}
+                >
+                  <Ph_ name={PAGE_ICONS[id]} size={16} />
+                  <span className="page-item-name">{p.name}</span>
+                  <span className="page-item-meta">
+                    {p.disabled ? 'Off' : `${p.body.length} ${p.body.length === 1 ? 'section' : 'sections'}`}
+                  </span>
+                  {id === pageId && <Ph_ name="Check" size={14} className="page-item-check" />}
+                </button>
+                {/* Home is the portal's front door, so it can't be switched off. */}
+                {id === 'home' && <span className="page-row-spacer" aria-hidden="true" />}
+                {id !== 'home' && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!p.disabled}
+                    aria-label={`${p.name} page ${p.disabled ? 'off' : 'on'}`}
+                    title={p.disabled ? 'Turn page on' : 'Turn page off'}
+                    className={`switch ${p.disabled ? '' : 'on'}`}
+                    onClick={() => actions.setPageDisabled(id, !p.disabled)}
+                  >
+                    <span />
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>

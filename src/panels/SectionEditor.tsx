@@ -64,6 +64,8 @@ function VariantPicker({ section }: { section: Section }) {
               actions.revealElement(section.id)
             }}
             aria-pressed={on}
+            aria-label={variant.label}
+            title={variant.label}
           >
             <SectionPreview
               type={section.type}
@@ -72,8 +74,6 @@ function VariantPicker({ section }: { section: Section }) {
               surface={on ? section.surface : variant.surface ?? section.surface}
               maxHeight={96}
             />
-            {on && <Ph_ name="CheckCircle" size={16} weight="fill" className="variant-check" />}
-            <span className="variant-name">{variant.label}</span>
           </button>
         )
       })}
@@ -142,6 +142,7 @@ export function SectionEditor({ section, pinned }: { section: Section; pinned: b
                     actions.revealElement(section.id)
                   }}
                   aria-pressed={on}
+                  aria-label={v.label}
                   title={v.label}
                 >
                   <SectionPreview
@@ -151,8 +152,6 @@ export function SectionEditor({ section, pinned }: { section: Section; pinned: b
                     surface={on ? section.surface : v.surface ?? section.surface}
                     maxHeight={96}
                   />
-                  {on && <Ph_ name="CheckCircle" size={16} weight="fill" className="variant-check" />}
-                  <span className="variant-name">{v.label}</span>
                 </button>
               )
             })}
@@ -560,7 +559,7 @@ function PopupSectionEditor({
                 >
                   <span className="v3-content-card-copy">
                     <strong>Content details</strong>
-                    <span>{group.fields.length} {group.fields.length === 1 ? 'attribute' : 'attributes'}</span>
+                    <span>{group.fields.flatMap((field) => ('label' in field && field.label ? [field.label] : [])).join(', ')}</span>
                   </span>
                   <Ph_ name="CaretRight" size={13} className="v3-list-item-caret" />
                 </button>
@@ -1014,10 +1013,12 @@ function V3ContactFormGroup({
             onClick={(event) => openPopup(card.key, event.currentTarget)}
           >
             <span
-              className={`v3-list-item-icon ${card.draggable ? '' : 'is-placeholder'}`}
+              className="v3-list-item-icon"
               aria-hidden="true"
             >
-              <Ph_ name="DotsSixVertical" size={14} weight="bold" />
+              {card.draggable
+                ? <Ph_ name="DotsSixVertical" size={14} weight="bold" />
+                : <Ph_ name="TextH" size={14} />}
             </span>
             <span className="v3-content-card-copy">
               <strong>{card.label}</strong>
@@ -1041,14 +1042,14 @@ function V3IndentConnector({ count }: { count: number }) {
   if (!count) return null
   const centers = Array.from({ length: count }, (_, index) => 74 + index * 50)
   const last = centers[centers.length - 1]
-  const branches = centers.slice(0, -1).map((center) => `M12 ${center}H34.5`).join(' ')
-  const arrows = centers.map((center) => `M30.5 ${center - 4}L34.5 ${center}L30.5 ${center + 4}`).join(' ')
-  const trunk = `M12 46V${last - 4}Q12 ${last} 16 ${last}H34.5`
+  const branches = centers.slice(0, -1).map((center) => `M12 ${center}H24.5`).join(' ')
+  const arrows = centers.map((center) => `M22 ${center - 3.5}L24.5 ${center}L22 ${center + 3.5}`).join(' ')
+  const trunk = `M12 46V${last - 8}Q12 ${last} 20 ${last}H24.5`
 
   return (
     <svg
       className="v3-indent-connector"
-      viewBox={`0 0 34.5 ${46 + count * 50}`}
+      viewBox={`0 0 26.5 ${46 + count * 50}`}
       style={{ height: 46 + count * 50 }}
       aria-hidden="true"
     >

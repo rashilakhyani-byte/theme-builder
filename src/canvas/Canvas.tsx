@@ -241,6 +241,12 @@ export function Canvas({ onAdd }: { onAdd: (index: number) => void }) {
       onClick={() => actions.select(null)}
     >
       <div className={`frame ${device}`}>
+        {page.disabled && (
+          <div className="page-off-banner" role="status">
+            <Ph_ name="EyeSlash" size={15} />
+            This page is turned off, so visitors can’t see it. Turn it on from the Page menu.
+          </div>
+        )}
         <div
           className={`site ${preview ? '' : 'editing-on'}`}
           data-appearance={doc.theme.consumerThemeToggle ? consumerAppearance : doc.theme.appearance}

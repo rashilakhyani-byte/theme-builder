@@ -203,6 +203,14 @@ export default function App() {
   const appMode = useStore((s) => s.appMode)
   const selection = useStore((s) => s.selection)
   const [toast, setToast] = useState<string | null>(null)
+  const notice = useStore((s) => s.notice)
+
+  // A deletion notice stays long enough to reach for Undo.
+  useEffect(() => {
+    if (!notice) return
+    const timer = window.setTimeout(() => actions.dismissNotice(), 6000)
+    return () => window.clearTimeout(timer)
+  }, [notice?.n])
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -258,9 +266,25 @@ export default function App() {
         {appMode === 'builder' && <Builder onToast={showToast} />}
       </PortalShell>
 
-      {toast && (
+      {toast && !notice && (
         <div className="toast">
           <Icon name="check" size={14} /> {toast}
+        </div>
+      )}
+      {notice && (
+        <div className="toast" role="status">
+          <Icon name="trash" size={14} /> {notice.msg}
+          {notice.undo && (
+            <button
+              className="toast-action"
+              onClick={() => {
+                actions.undo()
+                actions.dismissNotice()
+              }}
+            >
+              Undo
+            </button>
+          )}
         </div>
       )}
     </div>

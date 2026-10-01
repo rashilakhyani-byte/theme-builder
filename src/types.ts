@@ -42,6 +42,8 @@ export interface Page {
   /** Section types the user may add to this page. Empty means "the page is fixed". */
   insertable: SectionType[]
   body: Section[]
+  /** Turned off pages keep their content but aren't published to visitors. */
+  disabled?: boolean
 }
 
 export interface Theme {

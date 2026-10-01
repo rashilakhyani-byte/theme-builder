@@ -168,7 +168,7 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
                   <button aria-pressed>Preview</button>
                 </div>
                 <span className="p-cardbar-spacer" />
-                <span className="p-saving">Saving Changes…</span>
+                <span className="p-saving">All changes saved</span>
                 <button className="p-publish">
                   Publish Changes <Ph_ name="CaretDown" size={11} />
                 </button>
@@ -183,9 +183,8 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
                       {RAIL.find((r) => r.id === railId)?.label}
                     </h1>
                     <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.6, color: 'var(--text-default)' }}>
-                      This screen isn’t built yet. The reference page is the one matched to the
-                      design so far — pick <strong>References</strong> in the rail to see it, or{' '}
-                      <strong>Customise</strong> to open the builder.
+                      This page is coming soon. Open <strong>References</strong> to see an API
+                      page, or <strong>Customise</strong> to edit your portal.
                     </p>
                   </div>
                 </div>
