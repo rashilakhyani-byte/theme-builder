@@ -5,9 +5,9 @@ import { buildPalette, hexIsValid } from '../theme/palette'
 import { Ph_ } from '../ui/Phosphor'
 
 const CHROME_COPY: Record<Chrome, { name: string; desc: string }> = {
-  subtle: { name: 'Subtle', desc: 'Chrome uses accent, a near-white with brand tint.' },
-  solid: { name: 'Solid', desc: 'Accent at full strength. Buttons invert to stay visible.' },
-  neutral: { name: 'Neutral', desc: 'Only buttons, links, and icons remain branded.' },
+  subtle: { name: 'Subtle', desc: 'Navigation bar and footer get a light tint of your brand colour.' },
+  solid: { name: 'Solid', desc: 'Navigation bar and footer use your brand colour at full strength.' },
+  neutral: { name: 'Neutral', desc: 'Neutral greys, with brand colour only on buttons, links and icons.' },
 }
 
 const CHROME_ORDER: Chrome[] = ['subtle', 'solid', 'neutral']
@@ -113,7 +113,7 @@ export function ThemePanel() {
           </div>
         </div>
         <div className="field-ui">
-          <label>Theme</label>
+          <label>Style</label>
           <div className="mode-list">
             {CHROME_ORDER.map((c) => (
               <button key={c} className={`mode ${theme.chrome === c ? 'on' : ''}`} onClick={() => actions.setTheme({ chrome: c })}>
@@ -131,7 +131,7 @@ export function ThemePanel() {
       <section className="sect">
         <div className="sect-label">Appearance</div>
         <div className="field-ui">
-          <label>Colour mode</label>
+          <label>Default mode</label>
           <div className="seg seg-fill">
             {(['light', 'dark'] as Appearance[]).map((a) => (
               <button key={a} className={theme.appearance === a ? 'on' : ''} onClick={() => actions.setTheme({ appearance: a })}>
@@ -143,8 +143,8 @@ export function ThemePanel() {
         <div className="field-ui consumer-theme-control">
           <div className="row-between">
             <div className="consumer-theme-copy">
-              <label>Portal theme toggle</label>
-              <span className="hint">Allow visitors to switch between light and dark mode.</span>
+              <label>Let visitors switch modes</label>
+              <span className="hint">Adds a light/dark switch to the portal header.</span>
             </div>
             <button type="button" className={`switch ${theme.consumerThemeToggle ? 'on' : ''}`} role="switch" aria-checked={!!theme.consumerThemeToggle} aria-label="Allow visitors to switch between light and dark mode" onClick={() => actions.setTheme({ consumerThemeToggle: !theme.consumerThemeToggle })}>
               <span />

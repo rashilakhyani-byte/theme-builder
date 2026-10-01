@@ -149,6 +149,7 @@ export function StartScreen() {
                     className={`start-template-row ${choice === t.id ? 'on' : ''}`}
                     onClick={() => setChoice(t.id)}
                     aria-pressed={choice === t.id}
+                    aria-label={t.name}
                   >
                     <span className="start-template-thumb">
                       <SectionPreview
@@ -159,7 +160,6 @@ export function StartScreen() {
                         theme={{ accent: t.accent, chrome: t.chrome, fontPrimary: t.fontPrimary, fontSecondary: t.fontSecondary }}
                       />
                     </span>
-                    <span><b>{t.short}</b><small>{t.tagline}</small></span>
                   </button>
                 )
               })}

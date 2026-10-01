@@ -172,6 +172,9 @@ interface State {
   preview: boolean
   past: Doc[]
   future: Doc[]
+  /** A short-lived message at the foot of the screen. `undo` offers to revert
+      the change that raised it; `n` changes on every notice. */
+  notice: { msg: string; undo?: boolean; n: number } | null
 }
 
 const initialVersion = loadVersion()
@@ -209,6 +212,7 @@ let state: State = {
   preview: false,
   past: [],
   future: [],
+  notice: null,
 }
 
 const listeners = new Set<() => void>()
@@ -626,8 +630,24 @@ export const actions = {
 
   removeSection(id: string) {
     lastEditKey = ''
+    const removed = currentPage().body.find((s) => s.id === id)
+    if (!removed) return
     commit(withBody(state.doc, state.pageId, (body) => body.filter((s) => s.id !== id)))
-    if (state.selection?.sectionId === id) patch({ selection: null })
+    patch({
+      ...(state.selection?.sectionId === id ? { selection: null } : {}),
+      notice: { msg: `${removed.name || REGISTRY[removed.type].label} deleted`, undo: true, n: Date.now() },
+    })
+  },
+  dismissNotice() {
+    if (state.notice) patch({ notice: null })
+  },
+
+  /** Pages can be switched off but never renamed or deleted. Home always stays on. */
+  setPageDisabled(pageId: PageId, disabled: boolean) {
+    if (pageId === 'home') return
+    lastEditKey = ''
+    const p = state.doc.pages[pageId]
+    commit({ ...state.doc, pages: { ...state.doc.pages, [pageId]: { ...p, disabled } } })
   },
 
   duplicateSection(id: string) {

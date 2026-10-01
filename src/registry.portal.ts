@@ -9,7 +9,7 @@ const link = (label: string) => ({ label, href: '#' })
 
 /* The eyebrow's switch heads the field it governs. */
 const eyebrow: Field[] = [
-  { kind: 'toggle', path: 'showEyebrow', label: 'Eyebrow tag', children: [{ kind: 'text', path: 'eyebrow', label: 'Label' }] },
+  { kind: 'toggle', path: 'showEyebrow', label: 'Label above title', children: [{ kind: 'text', path: 'eyebrow', label: 'Text' }] },
 ]
 const heading: Field[] = [
   ...eyebrow,

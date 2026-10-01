@@ -67,10 +67,12 @@ export function Ed({ path, as: Tag = 'span', className = '', multiline = false, 
   // is unaffected, since only <button> is invalid as descendant content.
   const RenderTag = !interactive && Tag === 'button' ? 'span' : Tag
 
+  // `editing` is a dependency because leaving preview remounts this element's
+  // children: React drops the text it rendered there, so it must be rewritten.
   useEffect(() => {
     const el = ref.current
     if (el && !live && el.textContent !== value) el.textContent = value
-  }, [value, live])
+  }, [value, live, editing])
 
   useEffect(() => {
     if (!editing && live) setLive(false)
