@@ -931,6 +931,8 @@
 }
 .ref-show-copy { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
 .ref-show-copy .btn { margin-top: 12px; }
+.ref-show-image { min-height: 420px; max-height: 505px; overflow: hidden; border-radius: var(--radius-lg); }
+.ref-show-image img { width: 100%; height: 100%; object-fit: cover; }
 .ref-stage { position: relative; height: 505px; }
 .ref-code {
   position: absolute; left: 16%; top: 26%; width: 50%; bottom: -40px; overflow: hidden;

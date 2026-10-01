@@ -1301,21 +1301,7 @@ export function References({ p, variant }: { p: P; variant: string }) {
           <Ed path="sub" as="p" className="ct-sub" multiline />
           <Ed path="cta" as="button" className="btn btn-primary btn-pill" />
         </div>
-        <div className="ref-stage">
-          <div className="ref-steps">
-            {arr(p.steps).map((_, i) => (
-              <span key={i} className="ref-step-wrap">
-                {i === 1 && <span className="ref-step-plus"><Ph_ name="Plus" size={11} weight="bold" /></span>}
-                <Ed path={`steps[${i}].label`} className="ref-step" />
-              </span>
-            ))}
-          </div>
-          <div className="ref-code">
-            <div className="ref-code-bar"><i /><i /><i /></div>
-            <Code text={p.specCode} path="specCode" numbered={false} className="dark" />
-          </div>
-          <Phone p={p} dark />
-        </div>
+        <Img path="image" className="ref-show-image" label="Reference image" />
       </div>
     )
   }
