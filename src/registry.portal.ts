@@ -537,7 +537,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         template: () => ({ icon: 'Wrench', title: 'New reason', body: 'Describe the reason.' }),
       },
       { kind: 'divider', label: 'Buttons', variants: ['illustrated'] },
-      { ...button('cta', 'Button'), variants: ['illustrated'] },
+      { ...optionalButton('showCta', 'cta', 'Button'), variants: ['illustrated'] },
       { kind: 'divider', label: 'Image', variants: ['illustrated'] },
       { kind: 'image', path: 'image', label: 'Illustration', variants: ['illustrated'] },
       { kind: 'divider', label: 'Bento grid', variants: ['bento'] },
@@ -595,7 +595,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         { icon: 'RocketLaunch', title: 'Designed to support growth', body: 'Unlock new revenue opportunities, expand faster and create embedded finance experiences.' },
       ],
       image: '',
+      showCta: true,
       cta: 'Learn more',
+      ctaHref: '#',
       statements: [
         { text: 'Production-grade performance, scalability and optimisation for the demands of your fintech ecosystem.' },
         { text: 'Seamless platform integration, production-ready reliability and solutions tailored to banking and fintech.' },

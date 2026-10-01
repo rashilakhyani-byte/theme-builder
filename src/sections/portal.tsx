@@ -1119,7 +1119,7 @@ export function WhyChooseUs({ p, variant }: { p: P; variant: string }) {
         <div className="why-col"><WhyCard i={0} /><WhyCard i={1} /></div>
         <div className="why-center">
           {p.image ? <Img path="image" className="why-img" label="Illustration" /> : <Pick path="image" className="why-img"><SecurityArt /></Pick>}
-          <Ed path="cta" as="button" className="btn btn-ghost btn-pill why-cta" />
+          {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-ghost btn-pill why-cta" />}
         </div>
         <div className="why-col"><WhyCard i={2} /><WhyCard i={3} /></div>
       </div>
