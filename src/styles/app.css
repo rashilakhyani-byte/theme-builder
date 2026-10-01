@@ -1119,6 +1119,7 @@ select.control {
 .v3-content-card-copy span { font-size: 11px; line-height: 16px; color: var(--ui-fg-3); }
 .v3-contact-form-list { display: flex; flex-direction: column; gap: 8px; }
 .v3-contact-field-editor { display: flex; flex-direction: column; gap: 8px; }
+.v3-merged-icon-text-editor { display: flex; flex-direction: column; gap: 8px; }
 .v3-placeholder-row { display: flex; align-items: center; gap: 8px; }
 .v3-placeholder-row > .control { flex: 1; min-width: 0; }
 .v3-inline-icon-picker { position: relative; flex: none; }
@@ -1742,11 +1743,17 @@ select.control {
   font-size: 13px; font-weight: 600;
 }
 .modal .btn-ui.start-scratch {
-  height: 40px; min-width: 168px; padding: 0 16px; border-radius: var(--ui-r);
-  background: transparent; border-color: var(--ui-stroke-hover); color: var(--ui-fg-2);
-  font-size: 13px; font-weight: 600;
+  height: 40px; min-width: 168px; padding: 0 16px; border-radius: 6px;
+  background: var(--ui-brand-tint); border-color: var(--ui-brand-tint); color: var(--ui-brand);
+  font-size: var(--ui-type-xs); line-height: var(--ui-leading-xs); font-weight: var(--ui-weight-heavy);
 }
-.modal .btn-ui.start-scratch:hover { background: var(--ui-ground); color: var(--ui-fg); }
+.modal .btn-ui.start-scratch:hover {
+  background: var(--ui-brand-tint-hover); border-color: var(--ui-brand-tint-hover); color: var(--ui-brand);
+}
+.modal .btn-ui.start-scratch:active {
+  background: color-mix(in oklab, var(--ui-brand) 12%, var(--ui-brand-tint));
+  border-color: transparent;
+}
 .modal .btn-ui.primary.start-go:hover {
   border-color: var(--ui-brand-hover); background: var(--ui-brand-hover); color: var(--ui-on-brand);
 }

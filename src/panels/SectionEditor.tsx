@@ -656,12 +656,13 @@ function PopupSectionEditor({
                     hideLink={!childMatch && (item?.children?.length ?? 0) > 0}
                   />
                 ) : (
-                  <FieldList
+                  <ItemAttributeEditor
                     sectionId={section.id}
                     fields={childMatch && nestedListField ? nestedListField.itemFields : (attributeFields ?? itemField.itemFields)}
-                    prefix={childMatch
-                      ? `${itemField.path}[${itemIndex}].${childPath}[${childIndex}].`
-                      : `${itemField.path}[${itemIndex}].`}
+                    basePath={childMatch
+                      ? `${itemField.path}[${itemIndex}].${childPath}[${childIndex}]`
+                      : `${itemField.path}[${itemIndex}]`}
+                    item={childMatch ? childItem : item}
                   />
                 )
               )}
@@ -816,6 +817,161 @@ function ContactFormFieldEditor({
       </div>
       <FieldList sectionId={sectionId} fields={trailingFields} prefix={`${basePath}.`} />
     </div>
+  )
+}
+
+function MergedIconTextEditor({
+  sectionId,
+  basePath,
+  item,
+  iconField,
+  textField,
+  trailingFields,
+}: {
+  sectionId: string
+  basePath: string
+  item: any
+  iconField: Extract<Field, { kind: 'icon' }>
+  textField: Extract<Field, { kind: 'text' }>
+  trailingFields: Field[]
+}) {
+  const [iconsOpen, setIconsOpen] = useState(false)
+  const [iconQuery, setIconQuery] = useState('')
+  const [iconAnchor, setIconAnchor] = useState<DOMRect | null>(null)
+  const [parentPopupRect, setParentPopupRect] = useState<DOMRect | null>(null)
+  const iconPickerRef = useRef<HTMLDivElement>(null)
+  const iconMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!iconsOpen) return
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (!iconPickerRef.current?.contains(target) && !iconMenuRef.current?.contains(target)) setIconsOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [iconsOpen])
+
+  const icon = String(item?.[iconField.path] ?? 'Circle')
+  const matchingIcons = useMemo(() => {
+    const query = iconQuery.trim().toLowerCase()
+    return query ? PHOSPHOR_NAMES.filter((name) => name.toLowerCase().includes(query)) : PHOSPHOR_NAMES
+  }, [iconQuery])
+
+  return (
+    <div className="v3-merged-icon-text-editor">
+      <div className="field-ui">
+        <label htmlFor={`${basePath}-${textField.path}`}>{textField.label}</label>
+        <div className="v3-placeholder-row">
+          <div className="v3-inline-icon-picker" ref={iconPickerRef}>
+            <button
+              type="button"
+              className={`v3-inline-icon-trigger ${iconsOpen ? 'open' : ''}`}
+              aria-label={`Choose icon for ${textField.label}`}
+              aria-haspopup="listbox"
+              aria-expanded={iconsOpen}
+              onClick={(event) => {
+                setIconAnchor(event.currentTarget.getBoundingClientRect())
+                setParentPopupRect(event.currentTarget.closest<HTMLElement>('.v3-popup')?.getBoundingClientRect() ?? null)
+                setIconsOpen((value) => !value)
+              }}
+            >
+              <Ph_ name={icon} size={18} />
+            </button>
+            {iconsOpen && iconAnchor && createPortal(
+              <div
+                className="v3-inline-icon-menu"
+                ref={iconMenuRef}
+                role="listbox"
+                aria-label={`${textField.label} icon`}
+                style={{
+                  left: parentPopupRect
+                    ? (parentPopupRect.right + 322 <= window.innerWidth
+                        ? parentPopupRect.right + 10
+                        : Math.max(10, parentPopupRect.left - 322))
+                    : Math.min(iconAnchor.left, window.innerWidth - 322),
+                  top: Math.min(iconAnchor.top, window.innerHeight - 330),
+                }}
+              >
+                <div className="v3-inline-icon-search">
+                  <Ph_ name="MagnifyingGlass" size={15} />
+                  <input
+                    autoFocus
+                    value={iconQuery}
+                    placeholder={`Search ${PHOSPHOR_NAMES.length} icons`}
+                    onChange={(event) => setIconQuery(event.target.value)}
+                  />
+                  {iconQuery && (
+                    <button type="button" aria-label="Clear icon search" onClick={() => setIconQuery('')}>
+                      <Ph_ name="X" size={13} />
+                    </button>
+                  )}
+                </div>
+                {matchingIcons.map((name) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={name === icon}
+                    className={name === icon ? 'on' : ''}
+                    key={name}
+                    title={name}
+                    onClick={() => {
+                      actions.setProp(sectionId, `${basePath}.${iconField.path}`, name)
+                      setIconsOpen(false)
+                    }}
+                  >
+                    <Ph_ name={name} size={17} />
+                  </button>
+                ))}
+                {!matchingIcons.length && <div className="v3-inline-icon-empty">No icons found</div>}
+              </div>,
+              document.querySelector('.app-root') ?? document.body,
+            )}
+          </div>
+          <input
+            id={`${basePath}-${textField.path}`}
+            className="control"
+            value={String(item?.[textField.path] ?? '')}
+            placeholder={textField.placeholder}
+            onChange={(event) => actions.setProp(sectionId, `${basePath}.${textField.path}`, event.target.value)}
+          />
+        </div>
+      </div>
+      <FieldList sectionId={sectionId} fields={trailingFields} prefix={`${basePath}.`} />
+    </div>
+  )
+}
+
+function ItemAttributeEditor({
+  sectionId,
+  basePath,
+  item,
+  fields,
+}: {
+  sectionId: string
+  basePath: string
+  item: any
+  fields: Field[]
+}) {
+  const iconField = fields.find((field): field is Extract<Field, { kind: 'icon' }> => field.kind === 'icon')
+  const textField = fields.find((field): field is Extract<Field, { kind: 'text' }> => (
+    field.kind === 'text' && (field.path === 'title' || field.path === 'label' || field.path === 'name')
+  ))
+
+  if (!iconField || !textField) {
+    return <FieldList sectionId={sectionId} fields={fields} prefix={`${basePath}.`} />
+  }
+
+  const trailingFields = fields.filter((field) => field !== iconField && field !== textField)
+  return (
+    <MergedIconTextEditor
+      sectionId={sectionId}
+      basePath={basePath}
+      item={item}
+      iconField={iconField}
+      textField={textField}
+      trailingFields={trailingFields}
+    />
   )
 }
 
