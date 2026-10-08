@@ -4,15 +4,16 @@ import { SectionBody } from '../sections/render'
 import { docFromTemplate, type TemplateDef } from '../templates'
 import { fontStack } from '../theme/fonts'
 import { paletteTokens } from '../theme/palette'
-import type { Section } from '../types'
+import type { Doc, Section } from '../types'
 
 const VIRTUAL_WIDTH = 1280
 const WIDTHS = { compact: 960, default: 1120, wide: 1280 }
 const INERT: any = { inert: '' }
 
 /** A complete, live portal page scaled into the template chooser. */
-export function TemplatePreview({ template }: { template: TemplateDef }) {
-  const doc = useMemo(() => docFromTemplate(template), [template])
+export function TemplatePreview({ template, doc: savedDoc }: { template?: TemplateDef; doc?: Doc }) {
+  // A saved template previews its own pages; a starter builds its sample page.
+  const doc = useMemo(() => savedDoc ?? docFromTemplate(template!), [template, savedDoc])
   const page = doc.pages.home
   const box = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
@@ -28,7 +29,7 @@ export function TemplatePreview({ template }: { template: TemplateDef }) {
     if (box.current) observer.observe(box.current)
     if (inner.current) observer.observe(inner.current)
     return () => observer.disconnect()
-  }, [template.id])
+  }, [template?.id, savedDoc])
 
   const scale = size.width ? size.width / VIRTUAL_WIDTH : 0
   const tokens = {

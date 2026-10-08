@@ -59,6 +59,93 @@ const recipes = () => [
   { title: 'Bulk payout automation', body: 'Automate vendor, employee and partner payouts at scale.', cta: 'Explore recipe' },
 ]
 
+/**
+ * Sections that step through items (tabs, a carousel, an accordion) can do it
+ * on their own: an on/off switch, and how long each item stays up.
+ */
+const autoplay = (variants?: string[]): Field[] => [
+  { kind: 'divider', label: 'Autoplay', ...(variants ? { variants } : {}) },
+  {
+    kind: 'toggle', path: 'autoplay', label: 'Enable autoplay', ...(variants ? { variants } : {}),
+    children: [{
+      kind: 'select', path: 'autoplaySeconds', label: 'Time per item',
+      options: [2, 3, 4, 5, 6, 8, 10].map((n) => ({ value: String(n), label: `${n} seconds` })),
+    }],
+  },
+]
+const autoplayDefaults = { autoplay: false, autoplaySeconds: '4' }
+
+/** The Solution section's industries, each with the recipes it features. */
+const solutionIndustries = () => {
+  const sets: Record<string, [string, string][]> = {
+    'Payment gateways': [
+      ['Send funds via local transfer', 'Real-time fund movement with automated webhook transaction updates.'],
+      ['QR payment acceptance', 'Dynamic QR-based payments across mobile and retail channels.'],
+      ['Bulk payout automation', 'Automate vendor, employee and partner payouts at scale.'],
+      ['Settlement reconciliation', 'Match transactions automatically with real-time reporting.'],
+    ],
+    'Lending companies': [
+      ['Instant credit decisioning', 'Score applicants with account and transaction data in one call.'],
+      ['Loan disbursement', 'Push approved funds straight to a borrower’s account.'],
+      ['Automated repayments', 'Collect instalments by mandate and reconcile them automatically.'],
+      ['Account verification', 'Confirm account ownership before money moves.'],
+    ],
+    Logistics: [
+      ['COD collection', 'Reconcile cash-on-delivery collections as each route closes.'],
+      ['Driver payouts', 'Send same-day payouts to driver wallets and bank accounts.'],
+      ['Split settlements', 'Share each payment between carriers, hubs and partners.'],
+      ['Fleet expense cards', 'Issue virtual cards with per-trip spending limits.'],
+    ],
+    'E-commerce': [
+      ['One-call checkout', 'Offer every local payment method from a single integration.'],
+      ['Instant refunds', 'Refund in one call, with status updates by webhook.'],
+      ['Recurring billing', 'Run subscriptions without a separate provider.'],
+      ['Marketplace payouts', 'Pay sellers on a schedule, net of fees.'],
+    ],
+    Insurance: [
+      ['Premium collection', 'Automate premium debits with retries and reminders.'],
+      ['Claims payouts', 'Send approved claims in real time, with a full audit trail.'],
+      ['Policy-holder verification', 'Verify identity and account details at onboarding.'],
+      ['Broker commissions', 'Calculate and pay commissions on every collected premium.'],
+    ],
+  }
+  return industries().map(({ icon, name, tagline }) => ({
+    icon, name, tagline,
+    recipes: (sets[name] ?? []).map(([title, body]) => ({ title, body, cta: 'Explore recipe' })),
+  }))
+}
+
+const solutionInfo = () => ({
+  showInfo: true,
+  infoTitle: 'Why businesses choose Northwind APIs',
+  infoBody: 'Built for performance, availability and scale.',
+  infoImage: '',
+  stats: [
+    { value: '67', label: 'API references' },
+    { value: '40+', label: 'Banking APIs' },
+    { value: '99.9%', label: 'Platform availability' },
+  ],
+})
+
+/**
+ * Older saved documents kept one flat `recipes` list beside the industries.
+ * Give each industry its own copy and add the info card, so they open in the
+ * nested shape the editor and renderer now expect.
+ */
+export function migrateSolutionProps(props: Record<string, any>): Record<string, any> {
+  const list = Array.isArray(props.industries) ? props.industries : []
+  if (list.every((ind: any) => Array.isArray(ind?.recipes)) && 'showInfo' in props) return props
+  const flat = Array.isArray(props.recipes) ? props.recipes : []
+  const { recipes: _flat, image: _art, ...rest } = props
+  return {
+    ...solutionInfo(),
+    ...rest,
+    industries: list.map((ind: any) => (
+      Array.isArray(ind?.recipes) ? ind : { ...ind, recipes: flat.slice(0, 4).map((r: any) => ({ ...r })) }
+    )),
+  }
+}
+
 const visibilityOptions = [
   { value: 'everyone', label: 'Everyone' },
   { value: 'logged-in', label: 'Logged-in users only' },
@@ -130,6 +217,12 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     variants: [{ id: 'portal', label: 'Centered links' }],
     fields: [
       { kind: 'image', path: 'logoImage', label: 'Logo' },
+      {
+        kind: 'select', path: 'linkAlign', label: 'Link alignment', options: [
+          { value: 'center', label: 'Center' },
+          { value: 'right', label: 'Right' },
+        ],
+      },
       { kind: 'divider', label: 'Links' },
       {
         kind: 'list', path: 'links', label: 'Nav links', itemTitle: 'label', addLabel: 'Add link', max: 7,
@@ -166,6 +259,7 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     ],
     defaults: () => ({
       logoText: 'Northwind',
+      linkAlign: 'center',
       logoIcon: 'Sparkle',
       links: [
         { ...navItem('API Products'), dropdown: true, children: [
@@ -218,6 +312,23 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
           logoList('logos', 'Logos'),
         ],
       },
+      // Shown inside the Logos group: the logos scroll past as a marquee.
+      { kind: 'divider', label: 'Autoplay' },
+      {
+        kind: 'toggle', path: 'logosAutoplay', label: 'Enable autoplay',
+        children: [{
+          kind: 'select', path: 'logosAutoplaySeconds', label: 'Time per logo',
+          options: [2, 3, 4, 5, 6, 8, 10].map((n) => ({ value: String(n), label: `${n} seconds` })),
+        }],
+      },
+      { kind: 'divider', label: 'Image' },
+      { kind: 'image', path: 'image', label: 'Banner image' },
+      {
+        kind: 'select', path: 'imageSide', label: 'Image position', variants: ['split'], options: [
+          { value: 'left', label: 'Left' },
+          { value: 'right', label: 'Right' },
+        ],
+      },
     ],
     defaults: () => ({
       showEyebrow: true,
@@ -229,6 +340,9 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       showSecondary: true,
       secondaryCta: 'Book a Meeting',
       image: '',
+      imageSide: 'right',
+      logosAutoplay: false,
+      logosAutoplaySeconds: '4',
       productName: 'Northwind',
       showLogos: true,
       logoHeading: 'Our Proud Partners',
@@ -351,8 +465,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ category: 'Payments API', name: 'New API', desc: 'Describe what this API does.', cta: 'View API reference', endpoints: 'GET /v1/resource', image: '' }),
       },
+      ...autoplay(),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'Featured APIs',
       title: 'Comprehensive Banking APIs at Your Fingertips',
@@ -370,6 +486,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         { category: 'Accounts API', name: 'Domestic Transfer', desc: 'Send local transfers instantly with account validation, idempotent retries and end-to-end status tracking.', cta: 'View API reference', endpoints: 'POST /accounts/transfers\nGET /accounts/{accountId}/balance\nPATCH /accounts/{accountId}\nGET /accounts/{accountId}/history' },
         { category: 'Payments API', name: 'Bulk Payroll Transfer', desc: 'Pay hundreds of employees in one batch with per-line validation, partial retries and reconciliation files.', cta: 'View API reference', endpoints: 'POST /payroll/batches\nGET /payroll/batches/{batchId}' },
         { category: 'Payments API', name: 'View Payment History', desc: 'Query every payment by status, date or counterparty with cursor pagination and exportable statements.', cta: 'View API reference', endpoints: 'GET /payments\nGET /payments/{paymentId}' },
+        { category: 'Loans API', name: 'Loan Origination', desc: 'Create applications, run eligibility checks and issue offers with a single decisioning flow.', cta: 'View API reference', endpoints: 'POST /loans/applications\nGET /loans/applications/{id}' },
+        { category: 'KYC API', name: 'Identity Verification', desc: 'Verify customers against ID documents and watchlists, with clear pass, review and fail outcomes.', cta: 'View API reference', endpoints: 'POST /kyc/verifications\nGET /kyc/verifications/{id}' },
+        { category: 'Accounts API', name: 'Account Balances', desc: 'Read available and ledger balances in real time across every linked account.', cta: 'View API reference', endpoints: 'GET /accounts/{id}/balances\nGET /accounts' },
+        { category: 'Fraud API', name: 'Transaction Screening', desc: 'Score each transaction for risk before it settles, and hold the ones that need review.', cta: 'View API reference', endpoints: 'POST /fraud/screenings\nGET /fraud/screenings/{id}' },
       ],
     }),
   },
@@ -399,8 +519,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       },
       { kind: 'divider', label: 'Image' },
       { kind: 'image', path: 'image', label: 'Image' },
+      ...autoplay(),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'Marketplace',
       title: 'API Marketplace Features',
@@ -448,8 +570,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ icon: 'Circle', title: 'New step', tagline: 'Tagline', short: 'Short description', body: 'Describe this step.', badge: 'Self service', image: '' }),
       },
+      ...autoplay(['split']),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'Getting Started',
       title: 'Get Started with the Developer Portal',
@@ -476,39 +600,55 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
     variants: [{ id: 'sidebar', label: 'Industry sidebar', surface: 'muted' }],
     fields: [
       ...heading,
+      { kind: 'text', path: 'featuredLabel', label: 'Featured label' },
       {
+        // Each industry owns the recipes shown when it is selected, so the
+        // editor lists them as a parent with children, like the nav links.
         kind: 'list', path: 'industries', label: 'Industries', itemTitle: 'name', addLabel: 'Add industry',
         itemFields: [
           { kind: 'icon', path: 'icon', label: 'Icon' },
           { kind: 'text', path: 'name', label: 'Name' },
           { kind: 'text', path: 'tagline', label: 'Tagline' },
-          { kind: 'text', path: 'headline', label: 'Headline' },
-          { kind: 'text', path: 'body', label: 'Description', multiline: true },
+          {
+            kind: 'list', path: 'recipes', label: 'Featured recipes', itemTitle: 'title', addLabel: 'Add recipe', max: 4,
+            itemFields: [
+              { kind: 'text', path: 'title', label: 'Title' },
+              { kind: 'text', path: 'body', label: 'Description', multiline: true },
+              { kind: 'text', path: 'cta', label: 'Link label' },
+              { kind: 'text', path: 'href', label: 'Link', placeholder: 'https:// or /path' },
+            ],
+            template: () => ({ title: 'New recipe', body: 'Describe the recipe.', cta: 'Explore recipe' }),
+          },
         ],
-        template: () => ({ icon: 'Buildings', name: 'Industry', tagline: 'Tagline', headline: 'Headline', body: 'Describe the solution.' }),
+        template: () => ({ icon: 'Buildings', name: 'Industry', tagline: 'Tagline', recipes: [] }),
       },
-      { kind: 'image', path: 'image', label: 'Illustration (replaces the flow artwork)' },
-      { kind: 'text', path: 'featuredLabel', label: 'Featured label' },
+      { kind: 'divider', label: 'Bottom info card' },
       {
-        kind: 'list', path: 'recipes', label: 'Featured recipes', itemTitle: 'title', addLabel: 'Add recipe',
-        itemFields: [
-          { kind: 'text', path: 'title', label: 'Title' },
-          { kind: 'text', path: 'body', label: 'Description', multiline: true },
-          { kind: 'text', path: 'cta', label: 'Link label' },
-          { kind: 'text', path: 'href', label: 'Link', placeholder: 'https:// or /path' },
+        kind: 'toggle', path: 'showInfo', label: 'Info card', children: [
+          { kind: 'text', path: 'infoTitle', label: 'Title', multiline: true },
+          { kind: 'text', path: 'infoBody', label: 'Description', multiline: true },
+          { kind: 'image', path: 'infoImage', label: 'Image' },
+          {
+            kind: 'list', path: 'stats', label: 'Stats', itemTitle: 'label', addLabel: 'Add stat', max: 3,
+            itemFields: [
+              { kind: 'text', path: 'value', label: 'Value' },
+              { kind: 'text', path: 'label', label: 'Label' },
+            ],
+            template: () => ({ value: '00', label: 'Stat' }),
+          },
         ],
-        template: () => ({ title: 'New recipe', body: 'Describe the recipe.', cta: 'Explore recipe' }),
       },
+      ...autoplay(),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'Solution',
       title: 'Explore Solutions by Industry',
       sub: 'Select a business vertical to see the recommended API stack and how it powers real-world fintech products.',
-      industries: industries(),
-      image: '',
       featuredLabel: 'Featured solution',
-      recipes: recipes(),
+      industries: solutionIndustries(),
+      ...solutionInfo(),
     }),
   },
 
@@ -582,8 +722,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
         ],
         template: () => ({ value: '00', label: 'Stat' }),
       },
+      ...autoplay(['usecases']),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'Why Choose Us',
       title: 'Built for Scale, Trust, and Growth',
@@ -842,8 +984,10 @@ export const PORTAL_REGISTRY: Partial<Record<SectionType, SectionDef>> = {
       },
       { kind: 'divider', label: 'Buttons' },
       optionalButton('showCta', 'cta', 'Button'),
+      ...autoplay(),
     ],
     defaults: () => ({
+      ...autoplayDefaults,
       showEyebrow: true,
       eyebrow: 'FAQs',
       title: 'Your Queries. Answered.',

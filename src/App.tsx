@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { actions, useStore } from './store'
 import { paletteTokens } from './theme/palette'
 import { DEFAULT_FONT, fontStack, useCustomFonts, useFonts } from './theme/fonts'
@@ -7,10 +7,8 @@ import { LeftPanel } from './panels/LeftPanel'
 import { AddSection } from './panels/AddSection'
 import { PortalShell } from './portal/PortalShell'
 import { StartScreen } from './panels/StartScreen'
-import type { BuilderVersion } from './store'
 import { Icon } from './ui/Icon'
 import { Ph_ } from './ui/Phosphor'
-import { useDismiss } from './ui/useDismiss'
 
 const DEVICES = [
   { id: 'desktop', label: 'Desktop' },
@@ -18,85 +16,24 @@ const DEVICES = [
   { id: 'mobile', label: 'Mobile' },
 ] as const
 
-const VERSIONS: { id: BuilderVersion; name: string; tagline: string; desc: string }[] = [
-  {
-    id: 'v1',
-    name: 'Version 1',
-    tagline: 'Section catalogue',
-    desc: 'Every page starts filled in. Sections are added from a modal library.',
-  },
-  {
-    id: 'v2',
-    name: 'Version 2',
-    tagline: 'Onboarding & templates',
-    desc: 'Start from a template or a blank canvas, then drag sections in from the side library.',
-  },
-  {
-    id: 'v3',
-    name: 'Version 3',
-    tagline: 'Popup editor',
-    desc: 'A compact settings index opens each group in a focused popup, keeping the panel short.',
-  },
-]
-
-/** Switches between iterations. Each keeps its own saved document. */
-function VersionMenu() {
-  const version = useStore((s) => s.version)
-  const started = useStore((s) => s.started)
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const close = useCallback(() => setOpen(false), [])
-  useDismiss(open, ref, close)
+/** Which template the admin is working on. Opens the template window to switch or manage. */
+function TemplatesButton() {
+  const active = useStore((s) => s.templates.find((t) => t.id === s.activeTemplateId))
+  const open = useStore((s) => s.templatesOpen)
 
   return (
-    <div className="menu-wrap" ref={ref}>
-      <button
-        className={`version-btn ${open ? 'on' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-        title="Builder iteration"
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        {version.toUpperCase()}
-        <Ph_ name="CaretDown" size={11} />
-      </button>
-      {open && (
-        <div className="menu version-menu" role="menu">
-          <div className="menu-label">Iteration</div>
-          {VERSIONS.map((v) => (
-            <button
-              key={v.id}
-              className={`version-item ${version === v.id ? 'on' : ''}`}
-              onClick={() => {
-                setOpen(false)
-                actions.setVersion(v.id)
-              }}
-            >
-              <span className="version-item-head">
-                {v.name}
-                <span className="version-tag">{v.tagline}</span>
-                {version === v.id && <Ph_ name="Check" size={14} className="version-check" />}
-              </span>
-              <span className="version-item-desc">{v.desc}</span>
-            </button>
-          ))}
-          {version !== 'v1' && started && (
-            <>
-              <span className="menu-sep" />
-              <button
-                className="menu-item"
-                onClick={() => {
-                  setOpen(false)
-                  actions.restart()
-                }}
-              >
-                <Ph_ name="ArrowCounterClockwise" size={16} /> Back to the start screen
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+    <button
+      className={`templates-btn ${open ? 'on' : ''}`}
+      onClick={() => actions.openTemplates()}
+      aria-haspopup="dialog"
+      title="Switch or manage templates"
+    >
+      <Ph_ name="SquaresFour" size={16} />
+      <span className="templates-btn-text">
+        <span className="templates-btn-kicker">Template</span>
+        <span className="templates-btn-name">{active ? active.name : 'Not saved'}</span>
+      </span>
+    </button>
   )
 }
 
@@ -106,6 +43,7 @@ function BuilderBar({ onToast }: { onToast: (msg: string) => void }) {
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
   const navOpen = useStore((s) => s.navOpen)
+  const version = useStore((s) => s.version)
 
   return (
     <header className="topbar">
@@ -116,7 +54,6 @@ function BuilderBar({ onToast }: { onToast: (msg: string) => void }) {
           <Ph_ name="SidebarSimple" size={20} />
         </button>
         <span className="topbar-title">Builder</span>
-        <VersionMenu />
         <span className="divider-v" />
         <button className="btn-ui icon" title="Undo (⌘Z)" disabled={!canUndo} onClick={() => actions.undo()}>
           <Ph_ name="ArrowUUpLeft" size={16} />
@@ -165,6 +102,7 @@ function BuilderBar({ onToast }: { onToast: (msg: string) => void }) {
             })}
           </div>
         )}
+        {version !== 'v1' && <TemplatesButton />}
         <button className="btn-ui primary" onClick={() => onToast('Published')}>
           <Ph_ name="RocketLaunch" size={16} /> Publish Changes
         </button>
@@ -177,6 +115,7 @@ function Builder({ onToast }: { onToast: (msg: string) => void }) {
   const preview = useStore((s) => s.preview)
   const version = useStore((s) => s.version)
   const started = useStore((s) => s.started)
+  const templatesOpen = useStore((s) => s.templatesOpen)
   const [addAt, setAddAt] = useState<number | null>(null)
 
   // v1 picks sections from a modal; v2/v3 keep the library in the side panel,
@@ -193,7 +132,7 @@ function Builder({ onToast }: { onToast: (msg: string) => void }) {
       {addAt !== null && <AddSection index={addAt} onClose={() => setAddAt(null)} />}
       {/* First run: the builder is already behind it, so the choice reads as a
           starting point rather than a separate step. */}
-      {version !== 'v1' && !started && <StartScreen />}
+      {version !== 'v1' && (!started || templatesOpen) && <StartScreen key={templatesOpen ? 'switch' : 'start'} />}
     </div>
   )
 }
@@ -273,7 +212,7 @@ export default function App() {
       )}
       {notice && (
         <div className="toast" role="status">
-          <Icon name="trash" size={14} /> {notice.msg}
+          <Icon name={notice.undo ? 'trash' : 'check'} size={14} /> {notice.msg}
           {notice.undo && (
             <button
               className="toast-action"

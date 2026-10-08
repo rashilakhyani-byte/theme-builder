@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Appearance, Doc, Page, PageId, Section, Selection, SectionType, Surface } from './types'
 import { REGISTRY, createSection, uid } from './registry'
-import { HOME_TYPES } from './registry.portal'
+import { HOME_TYPES, migrateSolutionProps } from './registry.portal'
 
 /* --------------------------------------------------------- path helpers */
 
@@ -175,6 +175,46 @@ interface State {
   /** A short-lived message at the foot of the screen. `undo` offers to revert
       the change that raised it; `n` changes on every notice. */
   notice: { msg: string; undo?: boolean; n: number } | null
+  /** Portals the admin saved to come back to. Each is a full copy of the document. */
+  templates: SavedTemplate[]
+  /** The saved template the current document came from, if any. */
+  activeTemplateId: string | null
+  /** The document as last saved to / loaded from a template; differs once edited. */
+  cleanDoc: Doc | null
+  /** The template chooser, reopened from the top bar after the first run. */
+  templatesOpen: boolean
+}
+
+export interface SavedTemplate {
+  id: string
+  name: string
+  updatedAt: number
+  doc: Doc
+}
+
+const TEMPLATES_KEY = 'site-builder:templates'
+const ACTIVE_TEMPLATE_KEY = 'site-builder:active-template'
+export const MAX_TEMPLATES = 10
+
+function loadTemplates(): SavedTemplate[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(TEMPLATES_KEY) ?? '[]')
+    return Array.isArray(list) ? list.filter((t) => t?.id && t?.doc?.pages).map((t) => ({ ...t, doc: migrate(t.doc) })) : []
+  } catch {
+    return []
+  }
+}
+
+/** False when the browser refuses the write (storage full), so the caller can say so. */
+function saveTemplates(list: SavedTemplate[], activeId: string | null): boolean {
+  try {
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(list))
+    if (activeId) localStorage.setItem(ACTIVE_TEMPLATE_KEY, activeId)
+    else localStorage.removeItem(ACTIVE_TEMPLATE_KEY)
+    return true
+  } catch {
+    return false
+  }
 }
 
 const initialVersion = loadVersion()
@@ -190,6 +230,21 @@ function loadConsumerAppearance(fallback: Appearance): Appearance {
     return fallback
   }
 }
+
+const initialTemplates = loadTemplates()
+const initialActive = (() => {
+  try {
+    const id = localStorage.getItem(ACTIVE_TEMPLATE_KEY)
+    const found = initialTemplates.find((t) => t.id === id)
+    if (found || !initialStarted || initialTemplates.length >= MAX_TEMPLATES) return found ?? null
+    // A portal built before templates existed: adopt it, so it saves itself too.
+    const adopted: SavedTemplate = { id: uid(), name: 'My portal', updatedAt: Date.now(), doc: initialDoc }
+    initialTemplates.unshift(adopted)
+    return saveTemplates(initialTemplates, adopted.id) ? adopted : (initialTemplates.shift(), null)
+  } catch {
+    return null
+  }
+})()
 
 let state: State = {
   version: initialVersion,
@@ -213,6 +268,12 @@ let state: State = {
   past: [],
   future: [],
   notice: null,
+  templates: initialTemplates,
+  activeTemplateId: initialActive?.id ?? null,
+  // Only matters while the portal isn't one of the saved templates: has it
+  // changed since it was started? Saved templates keep themselves up to date.
+  cleanDoc: null,
+  templatesOpen: false,
 }
 
 const listeners = new Set<() => void>()
@@ -235,13 +296,9 @@ export function useStore<T>(sel: (s: State) => T): T {
 
 export const getState = () => state
 
+/** The builder now always runs the popup editor; earlier iterations are retired. */
 function loadVersion(): BuilderVersion {
-  try {
-    const saved = localStorage.getItem(VERSION_KEY)
-    return saved === 'v1' || saved === 'v2' || saved === 'v3' ? saved : 'v3'
-  } catch {
-    return 'v3'
-  }
+  return 'v3'
 }
 
 /** v1 is always "started"; it has no start screen. */
@@ -262,10 +319,26 @@ function load(version: BuilderVersion): Doc | null {
     if (!raw) return null
     const doc = JSON.parse(raw) as Doc
     if (!doc?.pages || !doc?.pageOrder || !doc?.theme?.accent) return null
-    return doc
+    return migrate(doc)
   } catch {
     return null
   }
+}
+
+/**
+ * Bring documents saved by an older build up to date: settings added since
+ * then get their default, and Solution moves to its nested shape.
+ */
+function migrate(doc: Doc): Doc {
+  const fix = (s: Section): Section => {
+    const def = REGISTRY[s.type]
+    if (!def) return s
+    const props = { ...def.defaults(), ...(s.type === 'solution' ? migrateSolutionProps(s.props) : s.props) }
+    return { ...s, props }
+  }
+  const pages = { ...doc.pages }
+  for (const id of Object.keys(pages) as PageId[]) pages[id] = { ...pages[id], body: (pages[id].body ?? []).map(fix) }
+  return { ...doc, nav: fix(doc.nav), footer: fix(doc.footer), pages }
 }
 
 let saveTimer: number | undefined
@@ -277,7 +350,22 @@ function persist(doc: Doc) {
     } catch {
       /* quota or private mode — the prototype just keeps going */
     }
+    syncActiveTemplate()
   }, 250)
+}
+
+/**
+ * Templates save themselves: while the portal is one of the admin's templates,
+ * every change is written back into it. Called on the save timer, and directly
+ * before anything that moves away from the template.
+ */
+function syncActiveTemplate() {
+  const id = state.activeTemplateId
+  const current = state.templates.find((t) => t.id === id)
+  if (!current || current.doc === state.doc) return
+  const templates = state.templates.map((t) => (t.id === id ? { ...t, doc: state.doc, updatedAt: Date.now() } : t))
+  if (saveTemplates(templates, id)) patch({ templates })
+  else patch({ notice: { msg: 'Couldn’t save the template: this browser’s storage is full.', n: Date.now() } })
 }
 
 /** Mutate the doc, pushing the previous version onto the undo stack. */
@@ -446,6 +534,9 @@ export const actions = {
       ...state,
       doc,
       started: true,
+      activeTemplateId: null,
+      cleanDoc: doc,
+      templatesOpen: false,
       past: [],
       future: [],
       pageId: 'home',
@@ -638,6 +729,81 @@ export const actions = {
       notice: { msg: `${removed.name || REGISTRY[removed.type].label} deleted`, undo: true, n: Date.now() },
     })
   },
+  openTemplates() {
+    syncActiveTemplate()
+    patch({ templatesOpen: true, selection: null, library: null, preview: false })
+  },
+  closeTemplates() {
+    patch({ templatesOpen: false })
+  },
+
+  /** Save the current portal as a new template, or over the one it came from. */
+  saveTemplate(name: string, overwriteId?: string) {
+    syncActiveTemplate()
+    const existing = overwriteId ? state.templates.find((t) => t.id === overwriteId) : undefined
+    if (!existing && state.templates.length >= MAX_TEMPLATES) {
+      patch({ notice: { msg: `You can keep up to ${MAX_TEMPLATES} templates. Delete one to save another.`, n: Date.now() } })
+      return false
+    }
+    const saved: SavedTemplate = { id: existing?.id ?? uid(), name: name.trim() || existing?.name || 'Untitled template', updatedAt: Date.now(), doc: state.doc }
+    const templates = existing ? state.templates.map((t) => (t.id === saved.id ? saved : t)) : [saved, ...state.templates]
+    if (!saveTemplates(templates, saved.id)) {
+      patch({ notice: { msg: 'Couldn’t save: this browser’s storage is full. Delete a template or remove large images.', n: Date.now() } })
+      return false
+    }
+    patch({ templates, activeTemplateId: saved.id, cleanDoc: state.doc, notice: { msg: `Saved “${saved.name}”`, n: Date.now() } })
+    return true
+  },
+  /** Every new portal becomes a template straight away, so it saves itself. */
+  saveUntitledTemplate(base = 'Untitled template') {
+    const taken = new Set(state.templates.map((t) => t.name))
+    let name = base
+    for (let n = 2; taken.has(name); n++) name = `${base} ${n}`
+    return actions.saveTemplate(name)
+  },
+  renameTemplate(id: string, name: string) {
+    if (!name.trim()) return
+    const templates = state.templates.map((t) => (t.id === id ? { ...t, name: name.trim() } : t))
+    if (saveTemplates(templates, state.activeTemplateId)) patch({ templates })
+  },
+  duplicateTemplate(id: string) {
+    syncActiveTemplate()
+    const src = state.templates.find((t) => t.id === id)
+    if (!src || state.templates.length >= MAX_TEMPLATES) return
+    const templates = [{ ...src, id: uid(), name: `${src.name} copy`, updatedAt: Date.now() }, ...state.templates]
+    if (saveTemplates(templates, state.activeTemplateId)) patch({ templates })
+  },
+  deleteTemplate(id: string) {
+    const templates = state.templates.filter((t) => t.id !== id)
+    const activeTemplateId = state.activeTemplateId === id ? null : state.activeTemplateId
+    // Deleting the template in use leaves the portal open but unsaved again.
+    if (saveTemplates(templates, activeTemplateId)) {
+      patch({ templates, activeTemplateId, ...(activeTemplateId ? {} : { cleanDoc: null }) })
+    }
+  },
+  /**
+   * Replace the working portal with a saved or starter template. The template
+   * being left is saved first, and undo history starts over: undoing across a
+   * switch would write one template's pages into another.
+   */
+  switchTo(doc: Doc, templateId: string | null) {
+    lastEditKey = ''
+    syncActiveTemplate()
+    try {
+      localStorage.setItem(startedKey(state.version), '1')
+    } catch {
+      /* ignore */
+    }
+    saveTemplates(state.templates, templateId)
+    state = {
+      ...state, doc, past: [], future: [],
+      started: true, templatesOpen: false, activeTemplateId: templateId, cleanDoc: doc,
+      pageId: 'home', panel: 'root', sidebarTab: 'page', selection: null, library: null, reveal: null, inspect: null,
+    }
+    persist(doc)
+    emit()
+  },
+
   dismissNotice() {
     if (state.notice) patch({ notice: null })
   },

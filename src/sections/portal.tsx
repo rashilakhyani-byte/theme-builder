@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Btn, Ed, Ico, Img, Pick, useSection, useThemeImage } from '../canvas/Bits'
 import { Ph_ } from '../ui/Phosphor'
 import { actions, useStore } from '../store'
@@ -14,6 +14,30 @@ import { actions, useStore } from '../store'
    ========================================================================== */
 
 type P = Record<string, any>
+
+/**
+ * Auto-rotate: steps a section's active item forward on a timer when the admin
+ * switched it on. It runs for visitors and in Preview — never while editing,
+ * where a moving target would fight the editor — and waits while the pointer
+ * is over the section. Spread the returned handlers on the rotating wrapper.
+ */
+function useAutoRotate(p: P, count: number, step: (next: (i: number) => number) => void) {
+  const { editing, interactive = true } = useSection()
+  const paused = useRef(false)
+  const seconds = Math.max(1, Number(p.autoplaySeconds) || 4)
+  const on = !!p.autoplay && !editing && interactive && count > 1
+  useEffect(() => {
+    if (!on) return
+    const timer = window.setInterval(() => {
+      if (!paused.current) step((i) => (i + 1) % count)
+    }, seconds * 1000)
+    return () => window.clearInterval(timer)
+  }, [on, count, seconds])
+  return {
+    onMouseEnter: () => { paused.current = true },
+    onMouseLeave: () => { paused.current = false },
+  }
+}
 const arr = (v: any): any[] => (Array.isArray(v) ? v : [])
 
 /* ------------------------------------------------------------ shared bits */
@@ -46,7 +70,25 @@ function Logo({ base, it, className = '' }: { base: string; it: any; className?:
   )
 }
 
-function Arrows({ count = 3, active = 1 }: { count?: number; active?: number }) {
+function Arrows({ count = 3, active = 1, onGo }: { count?: number; active?: number; onGo?: (page: number) => void }) {
+  const { interactive = true } = useSection()
+  // With `onGo` the pager is real: arrows wrap around, dots jump to a page.
+  if (onGo && interactive) {
+    if (count < 2) return null
+    return (
+      <div className="parrows">
+        <button type="button" className="parrow-btn" aria-label="Previous" onClick={() => onGo((active - 1 + count) % count)}>
+          <Ph_ name="ArrowLeft" size={18} />
+        </button>
+        {Array.from({ length: count }).map((_, i) => (
+          <button key={i} type="button" className={`pdot ${i === active ? 'on' : ''}`} aria-label={`Page ${i + 1}`} aria-current={i === active} onClick={() => onGo(i)} />
+        ))}
+        <button type="button" className="parrow-btn" aria-label="Next" onClick={() => onGo((active + 1) % count)}>
+          <Ph_ name="ArrowRight" size={18} />
+        </button>
+      </div>
+    )
+  }
   return (
     <div className="parrows" aria-hidden="true">
       <Ph_ name="ArrowLeft" size={18} className="parrow off" />
@@ -106,7 +148,7 @@ export function PortalNav({ p }: { p: P }) {
   })
 
   return (
-    <div className="container pnav">
+    <div className={`container pnav ${p.linkAlign === 'right' ? 'links-right' : ''}`}>
       {logoImage ? (
         <Pick path="logoImage" className="brand">
           <img src={logoImage} alt={p.logoText ?? ''} className="brand-logo" />
@@ -227,7 +269,26 @@ export function PortalNav({ p }: { p: P }) {
 /* =================================================================== hero */
 
 function HeroLogos({ p, center = false }: { p: P; center?: boolean }) {
+  const { editing, interactive = true } = useSection()
   if (!p.showLogos) return null
+  const logos = arr(p.logos)
+  // Autoplay: the logos scroll past in a loop. Editing keeps them still so each one can be picked.
+  if (p.logosAutoplay && !editing && interactive && logos.length > 1) {
+    const seconds = Math.max(1, Number(p.logosAutoplaySeconds) || 4) * logos.length
+    const set = (hidden: boolean) => (
+      <div className="phero-marquee-set" aria-hidden={hidden || undefined}>
+        {logos.map((it, i) => <Logo key={i} base={`logos[${i}]`} it={it} />)}
+      </div>
+    )
+    return (
+      <div className={`phero-logos is-marquee ${center ? 'center' : ''}`}>
+        <Ed path="logoHeading" as="p" className="phero-logos-title" />
+        <div className="phero-marquee" style={{ '--marquee-s': `${seconds}s` } as React.CSSProperties}>
+          <div className="phero-marquee-track">{set(false)}{set(true)}</div>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={`phero-logos ${center ? 'center' : ''}`}>
       <Ed path="logoHeading" as="p" className="phero-logos-title" />
@@ -375,7 +436,7 @@ export function PortalHero({ p, variant }: { p: P; variant: string }) {
   }
 
   return (
-    <div className="container phero-split">
+    <div className={`container phero-split ${p.imageSide === 'left' ? 'image-left' : ''}`}>
       <div className="phero-copy">
         {p.showEyebrow && <Ed path="eyebrow" className="phero-eyebrow" />}
         <Ed path="headline" as="h1" className="phero-title" multiline />
@@ -646,9 +707,24 @@ function EndpointCard({ p, i }: { p: P; i: number }) {
 }
 
 export function FeaturedApis({ p, variant }: { p: P; variant: string }) {
-  const { interactive = true } = useSection()
+  const { id, interactive = true } = useSection()
   const [tab, setTab] = useState(0)
   const apis = arr(p.apis)
+  // The cards are paged: each layout shows a fixed number at a time.
+  const size = variant === 'tabs' ? 3 : variant === 'split' ? 2 : 4
+  const pages = Math.max(1, Math.ceil(apis.length / size))
+  const [page, setPage] = useState(0)
+  const pg = Math.min(page, pages - 1)
+  const shown = apis.map((_, i) => i).slice(pg * size, pg * size + size)
+  const rotate = useAutoRotate(p, pages, setPage)
+  // Editing an API from the panel turns to the page it is on.
+  const selectedApi = useStore((s) => {
+    const m = s.selection?.sectionId === id ? s.selection.path?.match(/^apis\[(\d+)\]/) : null
+    return m ? Number(m[1]) : -1
+  })
+  useEffect(() => {
+    if (selectedApi >= 0) setPage(Math.floor(selectedApi / size))
+  }, [selectedApi, size])
 
   if (variant === 'tabs') {
     return (
@@ -665,10 +741,10 @@ export function FeaturedApis({ p, variant }: { p: P; variant: string }) {
             ),
           )}
         </div>
-        <div className="grid g3 api-tab-cards">
-          {apis.slice(0, 3).map((_, i) => <ApiCard key={i} i={i} />)}
+        <div className="grid g3 api-tab-cards" {...rotate}>
+          {shown.map((i) => <ApiCard key={i} i={i} />)}
         </div>
-        <Arrows />
+        <Arrows count={pages} active={pg} onGo={setPage} />
       </div>
     )
   }
@@ -678,11 +754,11 @@ export function FeaturedApis({ p, variant }: { p: P; variant: string }) {
       <div className="container pad">
         <div className="api-layout">
           <ApiIntro p={p} />
-          <div className="ep-stack">
-            {apis.slice(0, 2).map((_, i) => <EndpointCard key={i} p={p} i={i} />)}
+          <div className="ep-stack" {...rotate}>
+            {shown.map((i) => <EndpointCard key={i} p={p} i={i} />)}
           </div>
         </div>
-        <Arrows />
+        <Arrows count={pages} active={pg} onGo={setPage} />
       </div>
     )
   }
@@ -691,11 +767,11 @@ export function FeaturedApis({ p, variant }: { p: P; variant: string }) {
     <div className="container pad">
       <div className="api-layout">
         <ApiIntro p={p} />
-        <div className="grid g2">
-          {apis.slice(0, 4).map((_, i) => <ApiCard key={i} i={i} />)}
+        <div className="grid g2" {...rotate}>
+          {shown.map((i) => <ApiCard key={i} i={i} />)}
         </div>
       </div>
-      <Arrows />
+      <Arrows count={pages} active={pg} onGo={setPage} />
     </div>
   )
 }
@@ -706,12 +782,13 @@ export function Marketplace({ p, variant }: { p: P; variant: string }) {
   const { interactive = true } = useSection()
   const [active, setActive] = useState(0)
   const features = arr(p.features)
+  const rotate = useAutoRotate(p, features.length, setActive)
 
   if (variant === 'carousel') {
     const i = Math.min(active, Math.max(features.length - 1, 0))
     return (
       <div className="container pad">
-        <div className="mk-carousel">
+        <div className="mk-carousel" {...rotate}>
           <div className="mk-intro-wrap">
             <div className="mk-intro soft">
               <Ed path="eyebrow" className="ptag" />
@@ -747,7 +824,7 @@ export function Marketplace({ p, variant }: { p: P; variant: string }) {
   return (
     <div className="container pad">
       <Head p={p} />
-      <div className="mk-list">
+      <div className="mk-list" {...rotate}>
         <div className="mk-features">
           {features.map((_, i) => (
             <div key={i} className={`mk-feature ${active === i ? 'on' : ''}`} onClick={() => setActive(i)}>
@@ -864,12 +941,13 @@ function StepLabel({ i }: { i: number }) {
 export function GettingStarted({ p, variant }: { p: P; variant: string }) {
   const [active, setActive] = useState(0)
   const steps = arr(p.steps)
+  const rotate = useAutoRotate(p, variant === 'split' ? steps.length : 0, setActive)
 
   if (variant === 'split') {
     const i = Math.min(active, Math.max(steps.length - 1, 0))
     return (
       <div className="container pad">
-        <div className="gs-split">
+        <div className="gs-split" {...rotate}>
           <div className="gs-split-l">
             <Head p={p} center={false} className="tight" />
             {p.showCta !== false && <Ed path="cta" as="button" className="btn btn-primary gs-cta" />}
@@ -943,26 +1021,6 @@ export function GettingStarted({ p, variant }: { p: P; variant: string }) {
 
 /* =============================================================== solution */
 
-function FlowArt({ label }: { label: string }) {
-  return (
-    <div className="flow surface surf-brand">
-      <span className="flow-arc" aria-hidden="true" />
-      <span className="flow-timer"><Ph_ name="Timer" size={22} weight="bold" /><small>Real-time</small></span>
-      <span className="flow-actor left"><Ph_ name="User" size={26} weight="fill" /></span>
-      <span className="flow-pill left">Accept</span>
-      <div className="flow-gw">
-        <div className="flow-gw-bar"><i /><i /><i /></div>
-        <b>{label}</b>
-        <span className="flow-shield"><Ph_ name="ShieldCheck" size={34} weight="fill" /></span>
-        <span className="flow-lines"><Skel w={70} /><Skel w={50} /></span>
-      </div>
-      <span className="flow-pill right">Settle</span>
-      <span className="flow-actor right"><Ph_ name="Bank" size={26} weight="fill" /></span>
-      <span className="flow-foot"><Ph_ name="Lock" size={12} weight="fill" /> Secure · Reliable · Compliant</span>
-    </div>
-  )
-}
-
 function IndustryList({ p, active, setActive, icons = false }: { p: P; active: number; setActive: (i: number) => void; icons?: boolean }) {
   return (
     <div className="ind-list">
@@ -979,42 +1037,69 @@ function IndustryList({ p, active, setActive, icons = false }: { p: P; active: n
   )
 }
 
-function RecipeCard({ i, className = '' }: { i: number; className?: string }) {
+/** `base` is the list the recipe lives in: the section's own, or one industry's. */
+function RecipeCard({ i, className = '', base = 'recipes' }: { i: number; className?: string; base?: string }) {
   return (
     <div className={`sol-recipe card ${className}`}>
-      <Ed path={`recipes[${i}].title`} as="h3" className="sol-recipe-title" />
-      <Ed path={`recipes[${i}].body`} as="p" className="sol-recipe-body" multiline />
-      <span className="sol-recipe-link"><Ed path={`recipes[${i}].cta`} /> <Ph_ name="ArrowRight" size={12} /></span>
+      <Ed path={`${base}[${i}].title`} as="h3" className="sol-recipe-title" />
+      <Ed path={`${base}[${i}].body`} as="p" className="sol-recipe-body" multiline />
+      <span className="sol-recipe-link"><Ed path={`${base}[${i}].cta`} /> <Ph_ name="ArrowRight" size={12} /></span>
     </div>
   )
 }
 
 export function Solution({ p }: { p: P; variant: string }) {
+  const { id, editing } = useSection()
   const [active, setActive] = useState(0)
+  const infoImage = useThemeImage('infoImage')
   const industries = arr(p.industries)
   const i = Math.min(active, Math.max(industries.length - 1, 0))
-  const ind = industries[i]
+  const recipes = arr(industries[i]?.recipes)
+  const base = `industries[${i}].recipes`
+  const rotate = useAutoRotate(p, industries.length, setActive)
+
+  // Editing an industry or one of its recipes from the panel brings that
+  // industry forward, so the thing being edited is always on screen.
+  const selectedIndustry = useStore((s) => {
+    const m = s.selection?.sectionId === id ? s.selection.path?.match(/^industries\[(\d+)\]/) : null
+    return m ? Number(m[1]) : -1
+  })
+  useEffect(() => {
+    if (selectedIndustry >= 0) setActive(selectedIndustry)
+  }, [selectedIndustry])
+
   return (
     <div className="container pad">
       <Head p={p} />
-      <div className="sol">
-        <IndustryList p={p} active={i} setActive={setActive} />
-        <div className="sol-main">
-          {ind && (
-            <>
-              <Ed path={`industries[${i}].headline`} as="h3" className="sol-headline" />
-              <Ed path={`industries[${i}].body`} as="p" className="sol-body" multiline />
-            </>
-          )}
-          <div className="sol-grid">
-            {p.image ? <Img path="image" className="sol-art" label="Illustration" /> : <Pick path="image" className="sol-art"><FlowArt label={ind?.name ?? 'Payment gateway'} /></Pick>}
-            <div className="sol-featured">
-              <Ed path="featuredLabel" className="sol-featured-label" />
-              {arr(p.recipes).slice(0, 3).map((_, k) => <RecipeCard key={k} i={k} />)}
-            </div>
+      <div className="uc" {...rotate}>
+        <IndustryList p={p} active={i} setActive={setActive} icons />
+        <div>
+          <Ed path="featuredLabel" as="div" className="uc-label" />
+          <div className="grid g2 uc-grid">
+            {recipes.slice(0, 4).map((_, k) => <RecipeCard key={`${i}-${k}`} base={base} i={k} className="uc-recipe" />)}
           </div>
+          {editing && !recipes.length && (
+            <div className="sol-empty">No featured recipes for this industry yet. Add one from the panel.</div>
+          )}
         </div>
       </div>
+      {p.showInfo !== false && (
+        <div className="uc-stats soft">
+          <Pick path="infoImage" className="uc-mark">
+            {infoImage ? <img src={infoImage} alt="" /> : <Ph_ name={p.logoIcon ?? 'Sparkle'} size={34} weight="fill" />}
+          </Pick>
+          <div className="uc-stats-copy">
+            <Ed path="infoTitle" as="div" className="uc-stats-title" multiline />
+            <Ed path="infoBody" as="div" className="uc-stats-sub" multiline />
+          </div>
+          {arr(p.stats).slice(0, 3).map((_, k) => (
+            <div className="uc-stat" key={k}>
+              <Ed path={`stats[${k}].value`} as="div" className="uc-stat-value" />
+              <Ed path={`stats[${k}].label`} as="div" className="uc-stat-label" />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1050,6 +1135,7 @@ function WhyCard({ i, className = '' }: { i: number; className?: string }) {
 export function WhyChooseUs({ p, variant }: { p: P; variant: string }) {
   const [active, setActive] = useState(0)
   const logoImage = useThemeImage('logoImage')
+  const rotate = useAutoRotate(p, variant === 'usecases' ? arr(p.industries).length : 0, setActive)
 
   if (variant === 'bento') {
     const items = arr(p.items)
@@ -1084,7 +1170,7 @@ export function WhyChooseUs({ p, variant }: { p: P; variant: string }) {
     return (
       <div className="container pad">
         <Head p={p} />
-        <div className="uc">
+        <div className="uc" {...rotate}>
           <IndustryList p={p} active={active} setActive={setActive} icons />
           <div>
             <Ed path="featuredLabel" as="div" className="uc-label" />
@@ -1328,10 +1414,11 @@ export function References({ p, variant }: { p: P; variant: string }) {
 
 export function PortalFaq({ p }: { p: P; variant: string }) {
   const [open, setOpen] = useState(1)
+  const rotate = useAutoRotate(p, arr(p.items).length, setOpen)
   return (
     <div className="container pad">
       <Head p={p} />
-      <div className="fq">
+      <div className="fq" {...rotate}>
         {arr(p.items).map((_, i) => {
           const on = open === i
           return (

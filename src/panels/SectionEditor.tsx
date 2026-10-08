@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { actions, useStore } from '../store'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { actions, getAt, useStore } from '../store'
 import { REGISTRY } from '../registry'
 import type { Field, Section, Surface } from '../types'
 import type { GeneratedPalette as Palette } from '../theme/palette'
@@ -79,6 +79,53 @@ function VariantPicker({ section }: { section: Section }) {
       })}
     </div>
   )
+}
+
+type ListField = Extract<Field, { kind: 'list' }>
+type SelectField = Extract<Field, { kind: 'select' }>
+
+const SEGMENT_ICONS: Record<string, string> = { left: 'AlignLeft', center: 'AlignCenterHorizontal', right: 'AlignRight' }
+
+/**
+ * A two- or three-way choice (alignment, side) as buttons instead of a
+ * dropdown. It is its own settings group, so its title matches every other
+ * group heading in the panel.
+ */
+function SegmentedSelect({ section, field }: { section: Section; field: SelectField }) {
+  const value = String(getAt(section.props, field.path) ?? field.options[0]?.value ?? '')
+  return (
+    <V3InlineGroup title={field.label}>
+      <div className="seg seg-fill" role="group" aria-label={field.label}>
+        {field.options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={value === option.value ? 'on' : ''}
+            aria-pressed={value === option.value}
+            onClick={() => {
+              actions.setProp(section.id, field.path, option.value)
+              actions.revealElement(section.id)
+            }}
+          >
+            {SEGMENT_ICONS[option.value] && <Ph_ name={SEGMENT_ICONS[option.value]} size={15} />}
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </V3InlineGroup>
+  )
+}
+
+/**
+ * Lists whose items own a child list are edited as a parent/child tree, the
+ * way nav links hold their dropdown items: footer columns with their links,
+ * Solution industries with their featured recipes.
+ */
+function treeChildList(sectionType: Section['type'], field: ListField): ListField | null {
+  const isTree = (sectionType === 'footer' && field.path === 'columns')
+    || (sectionType === 'solution' && field.path === 'industries')
+  if (!isTree) return null
+  return field.itemFields.find((itemField): itemField is ListField => itemField.kind === 'list') ?? null
 }
 
 /** Keep the panel relevant to the selected layout, including nested fields. */
@@ -357,7 +404,7 @@ function PopupSectionEditor({
       : null
     if (match) {
       const itemIndex = Number(match[1])
-      const childMatch = selectedPath.match(/\.(?:children|links)\[(\d+)\]/)
+      const childMatch = selectedPath.match(/\.(?:children|links|recipes)\[(\d+)\]/)
       openPopup(childMatch ? `child-${index}-${itemIndex}-${Number(childMatch[1])}` : `item-${index}-${itemIndex}`)
     } else {
       openPopup(`group-${index}`)
@@ -379,9 +426,11 @@ function PopupSectionEditor({
     ? ((section.props as any)[itemField.path] ?? [])[itemIndex]
     : null
   const nestedListField = itemField?.itemFields.find((field): field is Extract<Field, { kind: 'list' }> => field.kind === 'list')
-  const childPath = section.type === 'footer' && itemField?.path === 'columns' ? 'links' : 'children'
+  const treeList = itemField ? treeChildList(section.type, itemField) : null
+  const childPath = treeList?.path ?? 'children'
   const childItem = childIndex >= 0 ? item?.[childPath]?.[childIndex] : null
-  const attributeFields = itemField?.itemFields.filter((field) => !(section.type === 'footer' && itemField.path === 'columns' && field.kind === 'list')).map((field) => (
+  // In a tree the children have their own rows, so the parent's popup leaves them out.
+  const attributeFields = itemField?.itemFields.filter((field) => !(treeList && field.kind === 'list')).map((field) => (
     field.kind === 'toggle' && field.path === 'dropdown' ? { ...field, children: undefined } : field
   ))
   const actionGroupIndex = actionMatch ? Number(actionMatch[1]) : -1
@@ -389,8 +438,9 @@ function PopupSectionEditor({
   const actionField = actionGroupIndex >= 0 && groups[actionGroupIndex]?.fields[actionFieldIndex]?.kind === 'toggle'
     ? groups[actionGroupIndex].fields[actionFieldIndex]
     : null
+  // The card invites ("Enable autoplay"); its popup is simply the setting's name.
   const actionTitle = actionField?.kind === 'toggle'
-    ? togglePopupLabel(section.type, actionField)
+    ? (/autoplay$/i.test(actionField.path) ? 'Autoplay' : togglePopupLabel(section.type, actionField))
     : ''
   const popupTitle = open === 'layout'
     ? 'Layout'
@@ -429,6 +479,8 @@ function PopupSectionEditor({
             const toggle = group.fields.find((field): field is Extract<Field, { kind: 'toggle' }> => field.kind === 'toggle' && field.path === 'showLogos')
             const logoList = toggle?.children?.find((field): field is Extract<Field, { kind: 'list' }> => field.kind === 'list' && field.path === 'logos')
             const headingFields = toggle?.children?.filter((field) => field.kind !== 'list') ?? []
+            // The logos' autoplay switch belongs with the logos, not below them.
+            const autoplayIndex = groups.findIndex((candidate) => candidate.title === 'Autoplay')
             return toggle && logoList ? (
               <V3DirectLogoGroup
                 key="hero-logos"
@@ -437,9 +489,13 @@ function PopupSectionEditor({
                 field={logoList}
                 headingFields={headingFields}
                 toggleField={toggle}
+                footer={autoplayIndex >= 0 && (
+                  <V3ActionGroup section={section} group={groups[autoplayIndex]} groupIndex={autoplayIndex} openPopup={openPopup} />
+                )}
               />
             ) : null
           }
+          if (section.type === 'hero' && group.title === 'Autoplay') return null
           if (section.type === 'partners' && group.title === 'Content') {
             return (
               <V3InlineGroup key="partner-heading" title="Logo heading">
@@ -522,25 +578,31 @@ function PopupSectionEditor({
             )
             && group.title === 'Image'
           ) {
-            const imageFields = group.fields.map((field) => (
+            const selects = group.fields.filter((field): field is SelectField => field.kind === 'select')
+            const imageFields = group.fields.filter((field) => field.kind !== 'select').map((field) => (
               field.kind === 'image' ? { ...field, label: '' } : field
             ))
             return (
-              <V3InlineGroup key={`${group.title}-${index}`} title="Image">
-                <FieldList sectionId={section.id} fields={imageFields} />
-              </V3InlineGroup>
+              <Fragment key={`${group.title}-${index}`}>
+                <V3InlineGroup title="Image">
+                  <FieldList sectionId={section.id} fields={imageFields} />
+                </V3InlineGroup>
+                {selects.map((field) => <SegmentedSelect key={field.path} section={section} field={field} />)}
+              </Fragment>
             )
           }
           if (isNavigation && group.title === 'Content') {
             const logoFields = group.fields
               .filter((field) => field.kind === 'image')
               .map((field) => ({ ...field, label: '' }))
+            const selects = group.fields.filter((field): field is SelectField => field.kind === 'select')
             return (
               <div className="v3-inline-group v3-nav-logo-group has-section-divider" key={`${group.title}-${index}`}>
                 <div className="v3-inline-title">Logo</div>
                 <div className="v3-inline-body">
                   <FieldList sectionId={section.id} fields={logoFields} />
                 </div>
+                {selects.map((field) => <SegmentedSelect key={field.path} section={section} field={field} />)}
               </div>
             )
           }
@@ -1239,12 +1301,15 @@ function V3DirectLogoGroup({
   field,
   headingFields = [],
   toggleField,
+  footer,
 }: {
   section: Section
   title: string
   field: Extract<Field, { kind: 'list' }>
   headingFields?: Field[]
   toggleField?: Extract<Field, { kind: 'toggle' }>
+  /** Extra settings that belong to the logos, shown under the list. */
+  footer?: React.ReactNode
 }) {
   const items = ((section.props as any)[field.path] ?? []) as any[]
   const enabled = toggleField ? Boolean((section.props as any)[toggleField.path]) : true
@@ -1299,6 +1364,7 @@ function V3DirectLogoGroup({
           >
             <Ph_ name="Plus" size={13} /> {field.addLabel ?? 'Add logo'}
           </button>
+          {footer}
         </div>
       )}
     </div>
@@ -1323,17 +1389,17 @@ function V3ListGroup({
   const items = ((section.props as any)[field.path] ?? []) as any[]
   const atMax = field.max !== undefined && items.length >= field.max
   const isNavLinks = section.type === 'nav' && field.path === 'links'
-  const isFooterColumns = section.type === 'footer' && field.path === 'columns'
-  const isNestedTree = isNavLinks || isFooterColumns
+  const treeList = treeChildList(section.type, field)
+  const isNestedTree = isNavLinks || !!treeList
   const dropdownToggle = isNavLinks
     ? field.itemFields.find((itemField) => itemField.kind === 'toggle' && itemField.path === 'dropdown')
     : null
-  const childList = isFooterColumns
-    ? field.itemFields.find((itemField): itemField is Extract<Field, { kind: 'list' }> => itemField.kind === 'list' && itemField.path === 'links')
-    : dropdownToggle?.kind === 'toggle'
-      ? dropdownToggle.children?.find((itemField) => itemField.kind === 'list')
-      : null
-  const childPath = isFooterColumns ? 'links' : 'children'
+  const childList = treeList
+    ?? (dropdownToggle?.kind === 'toggle'
+      ? dropdownToggle.children?.find((itemField): itemField is ListField => itemField.kind === 'list')
+      : null)
+  const childPath = treeList?.path ?? 'children'
+  const childAddLabel = treeList?.addLabel ?? 'Add link'
 
   return (
     <div className="v3-list-group">
@@ -1359,6 +1425,13 @@ function V3ListGroup({
       {items.map((item, index) => {
         const key: PopupKey = `item-${groupIndex}-${index}`
         const title = String(item?.[field.itemTitle] ?? '') || `Item ${index + 1}`
+        // In a tree, picking a row also selects it on the canvas, so the parent
+        // it belongs to (the industry, the footer column) comes into view.
+        const open = (popupKey: PopupKey, target: HTMLElement, path: string) => {
+          if (treeList) actions.revealElement(section.id, path)
+          openPopup(popupKey, target)
+        }
+        const itemPath = `${field.path}[${index}].${field.itemTitle}`
         return (
           <div
             className={`v3-list-node ${isNestedTree ? 'is-nav' : ''} ${isNestedTree && item?.[childPath]?.length ? 'has-children' : ''}`}
@@ -1369,9 +1442,9 @@ function V3ListGroup({
               role="button"
               tabIndex={0}
               data-popup-key={key}
-              onClick={(event) => openPopup(key, event.currentTarget)}
+              onClick={(event) => open(key, event.currentTarget, itemPath)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') openPopup(key, event.currentTarget)
+                if (event.key === 'Enter') open(key, event.currentTarget, itemPath)
               }}
             >
               <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>
@@ -1379,8 +1452,8 @@ function V3ListGroup({
               <span className="v3-list-tools" onClick={(event) => event.stopPropagation()}>
                 {isNestedTree ? (
                 <button
-                  title="Add link"
-                  aria-label={`Add child link to ${title}`}
+                  title={childAddLabel}
+                  aria-label={`${childAddLabel} to ${title}`}
                   disabled={!childList || (childList.max !== undefined && (item?.[childPath]?.length ?? 0) >= childList.max)}
                   onClick={() => {
                     if (!childList) return
@@ -1401,7 +1474,8 @@ function V3ListGroup({
             {isNestedTree && <V3IndentConnector count={(item?.[childPath] ?? []).length} />}
             {isNestedTree && (item?.[childPath] ?? []).map((child: any, childIndex: number) => {
               const childKey: PopupKey = `child-${groupIndex}-${index}-${childIndex}`
-              const childTitle = String(child?.label ?? '') || `Child ${childIndex + 1}`
+              const childTitle = String(child?.[childList?.itemTitle ?? 'label'] ?? '') || `Child ${childIndex + 1}`
+              const childItemPath = `${field.path}[${index}].${childPath}[${childIndex}].${childList?.itemTitle ?? 'label'}`
               return (
                 <div
                   className="v3-list-item v3-nav-child"
@@ -1409,9 +1483,9 @@ function V3ListGroup({
                   role="button"
                   tabIndex={0}
                   data-popup-key={childKey}
-                  onClick={(event) => openPopup(childKey, event.currentTarget)}
+                  onClick={(event) => open(childKey, event.currentTarget, childItemPath)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') openPopup(childKey, event.currentTarget)
+                    if (event.key === 'Enter') open(childKey, event.currentTarget, childItemPath)
                   }}
                 >
                   <span className="v3-list-item-icon"><Ph_ name="DotsSixVertical" size={14} weight="bold" /></span>

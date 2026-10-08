@@ -1103,6 +1103,10 @@ select.control {
 .v3-setting-list > .v3-list-group + .v3-inline-group,
 .v3-setting-list > .v3-list-group + .v3-list-group { padding-top: 20px; }
 .v3-inline-body { display: flex; flex-direction: column; gap: 8px; }
+/* Settings nested in the logos group keep the panel's rhythm without doubling its inset. */
+.v3-direct-logo-body > .v3-action-group { padding: 12px 0 0; }
+/* A choice nested under the logo keeps the panel's group rhythm without doubling its inset. */
+.v3-nav-logo-group > .v3-inline-group { padding: 20px 0 0; }
 .v3-inline-body > .fgroup + .fgroup { margin-top: 2px; }
 .v3-inline-body .img-row { background: var(--ui-surface-pure); }
 .v3-direct-logo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1818,8 +1822,65 @@ select.control {
   border: 1px solid var(--ui-stroke); border-radius: 12px; background: var(--ui-step-up);
   color: var(--ui-fg); text-align: left; font: inherit; cursor: pointer;
 }
-.start-template-row:hover { border-color: var(--ui-stroke-hover); }
-.start-template-row.on { background: var(--ui-brand-tint); border-color: var(--ui-brand); }
+/* Card states: default, hover (lifted), selected (brand outline + tint). */
+.start-template-row { position: relative; transition: border-color .12s, box-shadow .12s, transform .12s; }
+.start-template-row:hover { border-color: var(--ui-stroke-hover); box-shadow: 0 4px 12px -6px var(--ui-shadow-medium); transform: translateY(-1px); }
+.start-template-row:focus-visible { outline: 2px solid var(--ui-brand); outline-offset: 2px; }
+.start-template-row.on { background: var(--ui-brand-tint); border-color: var(--ui-brand); box-shadow: 0 0 0 1px var(--ui-brand); transform: none; }
+.start-list-label { padding: 2px 2px 0; font-size: var(--ui-type-caption-s); line-height: var(--ui-leading-compact); font-weight: var(--ui-weight-heavy); color: var(--ui-fg-3); text-transform: uppercase; letter-spacing: .44px; }
+.start-template-row.is-mine { height: auto; }
+.start-template-row.is-mine .start-template-thumb { flex: none; height: 107px; border-bottom: 1px solid var(--ui-stroke); }
+.start-template-row.is-mine.on .start-template-thumb { border-bottom-color: var(--ui-brand-border); }
+.start-template-name { display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px; font-size: var(--ui-type-xs); line-height: var(--ui-leading-xs); font-weight: var(--ui-weight-medium); color: var(--ui-fg); }
+.start-template-name-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.start-template-badge { flex: none; padding: 0 6px; border-radius: 99px; background: var(--ui-brand); color: var(--ui-on-brand); font-size: 10px; line-height: 16px; font-weight: var(--ui-weight-heavy); }
+.start-rename-input {
+  min-height: 32px; margin: 0; padding: 6px 10px; border: 0; outline: 0; background: var(--ui-step-up);
+  font: inherit; font-size: var(--ui-type-xs); line-height: var(--ui-leading-xs); font-weight: var(--ui-weight-medium); color: var(--ui-fg);
+  box-shadow: inset 0 0 0 2px var(--ui-brand);
+}
+/* Rename / duplicate / delete live on the card: hidden until hover, focus or selection. */
+.start-card-actions {
+  position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; padding: 2px;
+  border: 1px solid var(--ui-stroke); border-radius: 8px; background: var(--ui-step-up);
+  box-shadow: 0 4px 12px -6px var(--ui-shadow-medium);
+  opacity: 0; transition: opacity .12s;
+}
+.start-template-row:hover .start-card-actions,
+.start-template-row:focus-within .start-card-actions,
+.start-template-row.on .start-card-actions { opacity: 1; }
+.start-card-actions button {
+  display: flex; align-items: center; gap: 4px; height: 24px; min-width: 24px; padding: 0 5px; justify-content: center;
+  border: 0; border-radius: 6px; background: transparent; color: var(--ui-fg-2);
+  font: inherit; font-size: var(--ui-type-caption-s); font-weight: var(--ui-weight-heavy); cursor: pointer;
+}
+.start-card-actions button:hover { background: var(--ui-l2); color: var(--ui-fg); }
+.start-card-actions button.danger:hover, .start-card-actions button.danger.confirm { background: var(--ui-danger-tint); color: var(--ui-danger); }
+.start-name-input { width: 200px; min-height: 34px; padding: 6px 10px; }
+/* The template window sits on the builder's own greys (DocuWiz tokens), a step
+   darker than the cards and the preview so they read as raised. */
+.modal.start-modal { background: var(--ui-ground); border-color: var(--ui-stroke); color: var(--ui-fg); }
+.start-modal .modal-head, .start-modal .modal-foot { border-color: var(--ui-stroke); background: var(--ui-ground); }
+.start-modal .modal-title { color: var(--ui-fg); }
+.start-modal .hint { color: var(--ui-fg-3); }
+.start-confirm { align-items: center; flex-wrap: wrap; }
+.start-confirm-text { margin-right: auto; font-size: var(--ui-type-action); color: var(--ui-fg-2); }
+.modal .btn-ui.primary.start-go:disabled { opacity: .5; cursor: default; }
+/* One line, same height and type as the Publish button beside it:
+   a quiet "Template" label, then the name. */
+.templates-btn {
+  display: flex; align-items: center; gap: 8px; height: 34px; max-width: 260px; padding: 0 12px;
+  border: 1px solid var(--ui-stroke); border-radius: 6px; background: var(--ui-step-up);
+  font: inherit; font-size: var(--ui-type-xs); line-height: var(--ui-leading-xs); cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.templates-btn:hover { border-color: var(--ui-stroke-hover); background: var(--ui-ground); }
+.templates-btn.on { border-color: var(--ui-brand); box-shadow: 0 0 0 3px var(--ui-focus-ring); }
+.templates-btn:focus-visible { outline: 2px solid var(--ui-brand); outline-offset: 1px; }
+.templates-btn > svg { flex: none; color: var(--ui-fg-3); }
+.templates-btn-text { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.templates-btn-kicker { flex: none; color: var(--ui-fg-3); font-weight: var(--ui-weight-regular); }
+.templates-btn-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-fg); font-weight: var(--ui-weight-heavy); }
 .start-template-thumb {
   display: block; width: 100%; flex: 1; min-height: 0; overflow: hidden;
 }
