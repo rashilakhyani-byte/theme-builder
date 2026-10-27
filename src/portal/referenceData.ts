@@ -113,11 +113,12 @@ export const ENDPOINTS: Record<string, Endpoint> = Object.fromEntries(
 export const RAIL: { id: string; label: string; icon: string }[] = [
   { id: 'overview', label: 'Overview', icon: 'Gauge' },
   { id: 'guides', label: 'Guides', icon: 'BookOpen' },
-  { id: 'references', label: 'References', icon: 'CodeSimple' },
-  { id: 'categories', label: 'Categories', icon: 'Graph' },
+  { id: 'references', label: 'References', icon: 'BracketsCurly' },
+  { id: 'categories', label: 'Categories', icon: 'CirclesThree' },
   { id: 'recipes', label: 'Recipes', icon: 'Cube' },
   { id: 'organisation', label: 'Organisation', icon: 'UsersThree' },
-  { id: 'api-access', label: 'API Access', icon: 'SignIn' },
-  { id: 'apps', label: 'Apps', icon: 'SquaresFour' },
+  { id: 'api-access', label: 'API Access', icon: 'SignOut' },
+  { id: 'apps', label: 'Apps', icon: 'Shapes' },
+  { id: 'monetisation', label: 'Monetisation', icon: 'CurrencyCircleDollar' },
   { id: 'customise', label: 'Customise', icon: 'Palette' },
 ]

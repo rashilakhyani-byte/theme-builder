@@ -11,15 +11,17 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* dvsh: --font-display is DM Sans, --font-mono is Geist Mono. */
+  --font-display: 'DM Sans', var(--ui-font-sans);
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
   color: var(--text-default);
 }
 
 .doc {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 32px;
-  padding: 26px 34px 80px;
+  padding: 28px 40px 80px;
   align-items: start;
 }
 
@@ -33,7 +35,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 0;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -48,16 +50,17 @@
   font-family: var(--font-mono);
   font-size: 34px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.4;
   letter-spacing: -0.02em;
   color: var(--text-hi);
 }
 
 .doc__lede {
   max-width: 62ch;
-  margin: 6px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.5;
   color: var(--text-default);
 }
 
@@ -128,8 +131,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 22px;
-  padding: 14px 16px;
+  margin-top: 24px;
+  padding: 16px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
@@ -138,13 +141,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-family: var(--font-display);
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-hi);
 }
 .doc-card__sub {
   margin-top: 2px;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
   color: var(--text-subtle);
 }
 
@@ -153,7 +158,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-width: 230px;
+  min-width: 210px;
   padding: 8px 12px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -162,6 +167,7 @@
   text-align: left;
 }
 .doc-select__value {
+  font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 600;
   color: var(--text-hi);
@@ -172,28 +178,30 @@
   color: var(--text-subtle);
 }
 
-.doc-section { padding-top: 34px; }
+.doc-section { padding-top: 40px; }
 .doc-section__title {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--text-hi);
 }
 .doc-section__icon { color: var(--brand-text); display: inline-flex; }
 .doc-section__note {
-  max-width: 62ch;
+  max-width: 60ch;
   margin: 6px 0 0;
+  font-family: var(--font-display);
   font-size: 13px;
   color: var(--text-subtle);
 }
 
 /* parameter rows */
 .param {
-  padding: 15px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 .param__head {
@@ -204,18 +212,19 @@
 }
 .param__name {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-hi);
 }
-.param__type { font-size: 12px; color: var(--text-subtle); }
+.param__type { font-family: var(--font-display); font-size: 11.5px; color: var(--text-subtle); }
 /* Fixed red, like the method badges: "required" is a semantic warning, not a
    brand accent. */
-.param__required { font-size: 11px; font-weight: 600; color: var(--status-danger); }
+.param__required { font-family: var(--font-display); font-size: 10px; font-weight: 600; color: var(--status-danger); }
 .doc-root[data-appearance='dark'] .param__required { color: var(--status-danger-bright); }
 .param__desc {
   max-width: 64ch;
   margin: 4px 0 0;
+  font-family: var(--font-display);
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-default);
@@ -228,24 +237,26 @@
   border-radius: 20px;
   background: var(--brand-tint);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--brand-text);
 }
 
-.doc-link { color: var(--brand-text); font-weight: 500; }
+/* Scoped: canvas.css has its own .doc-link (a flex row) for site sections. */
+.doc-root .doc-link { display: inline; padding: 0; border: 0; font-size: inherit; color: var(--brand-text); font-weight: 500; }
 .doc-link:hover { text-decoration: underline; }
 
 /* callout — brand-tinted panel */
 .callout {
   display: flex;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 20px;
   padding: 12px 14px;
   border: 1px solid var(--brand-border);
   border-radius: var(--radius-lg);
   background: var(--brand-tint);
 }
 .callout__body {
+  font-family: var(--font-display);
   font-size: 13px;
   line-height: 1.5;
   color: var(--brand-heading);
@@ -274,7 +285,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 8px 7px 14px;
+  padding: 8px 8px 8px 16px;
   background: var(--code-bg-header);
   border-bottom: 1px solid var(--code-border);
 }
@@ -284,7 +295,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   border-radius: var(--radius-md);
   color: var(--code-text-subtle);
   font-size: 12px;
@@ -303,10 +314,10 @@
 .code__body {
   display: flex;
   gap: 12px;
-  padding: 10px 12px 14px;
+  padding: 12px 14px 16px;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 11.5px;
   line-height: 1.75;
 }
 .code__gutter {

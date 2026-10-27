@@ -3,6 +3,14 @@ import { actions, useStore } from '../store'
 import { Ph_ } from '../ui/Phosphor'
 import { RAIL, TREE } from './referenceData'
 import { ReferenceDoc } from './ReferenceDoc'
+import { Overview } from './pages/Overview'
+import { GuideDoc, GuidesTree } from './pages/Guides'
+import { RecipesPage, RecipeTree } from './pages/Recipes'
+import { CategoriesPage, CategoriesTree } from './pages/Categories'
+import { OrganisationPage, OrgTree } from './pages/Organisation'
+import { AccessPage, AccessTree } from './pages/Access'
+import { BillingPage, BillingTree } from './pages/Apps'
+import { AppsRailPage, AppsTree, MonetisationPage, MonTree } from './pages/monetisation'
 
 /* ---------------------------------------------------------------- rail */
 
@@ -18,12 +26,13 @@ function IconRail() {
           onClick={() => actions.setRail(item.id)}
           title={item.label}
         >
-          <Ph_ name={item.icon} size={19} weight={railId === item.id ? 'fill' : 'regular'} />
+          <Ph_ name={item.icon} size={18} />
           <span className="p-rail-label">{item.label}</span>
         </button>
       ))}
       <span className="p-rail-spacer" />
-      <span className="p-rail-avatar">A</span>
+      {/* Billing & Pricing has no rail entry in the Figma; the account avatar opens it. */}
+      <button className="p-rail-avatar" title="Billing & Pricing" onClick={() => actions.setRail('billing')}>A</button>
     </nav>
   )
 }
@@ -31,7 +40,7 @@ function IconRail() {
 /* ------------------------------------------------------------ the tree */
 
 /** The square panel icon in the tree header — collapses the portal nav. */
-function NavToggle() {
+export function NavToggle() {
   const navOpen = useStore((s) => s.navOpen)
   return (
     <button
@@ -111,10 +120,15 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
   const appMode = useStore((s) => s.appMode)
   const navOpen = useStore((s) => s.navOpen)
   const railId = useStore((s) => s.railId)
+  const recipeId = useStore((s) => s.recipeId)
   const builder = appMode === 'builder'
+  // With the nav collapsed, the builder goes edge to edge with no top bar.
+  const full = builder && !navOpen
+  const page = builder ? null : pageFor(railId, recipeId)
   // While customising, the rail is the only navigation worth keeping — the
   // docs tree has nothing to say about the page being edited.
-  const cols = !navOpen ? 'content' : builder ? 'rail-content' : 'rail-tree-content'
+  const tree = navOpen && page?.tree
+  const cols = !navOpen ? 'content' : tree ? 'rail-tree-content' : 'rail-content'
 
   return (
     <div
@@ -122,12 +136,13 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
       data-chrome={theme.chrome}
       data-appearance={theme.appearance}
       data-mode={builder ? 'builder' : 'portal'}
+      data-full={full || undefined}
     >
       {/* The builder owns the full height of the card, so the portal's top bar
           steps out of the way; its nav toggle moves into the builder toolbar. */}
-      {!builder && (
+      {!full && (
         <header className="p-topbar">
-          {!navOpen && (
+          {!navOpen && !builder && (
             <button className="p-icon-btn" onClick={() => actions.toggleNav()} title="Show navigation">
               <Ph_ name="SidebarSimple" size={16} />
             </button>
@@ -148,13 +163,20 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
         </header>
       )}
 
-      <div className="p-body" data-cols={cols} data-mode={builder ? 'builder' : 'portal'}>
+      <div
+        className="p-body"
+        data-cols={cols}
+        data-mode={builder ? 'builder' : 'portal'}
+        style={page?.treeW ? ({ '--tree-w': `${page.treeW}px` } as React.CSSProperties) : undefined}
+      >
         {navOpen && <IconRail />}
-        {navOpen && !builder && <TreeSidebar />}
+        {tree}
 
-        <div className={`p-content ${builder ? 'is-builder' : ''}`}>
-          {builder ? (
+        <div className={`p-content ${builder ? 'is-builder' : ''} ${page && !page.cardbar ? 'is-page' : ''}`}>
+          {builder || !page ? (
             children
+          ) : !page.cardbar ? (
+            page.body
           ) : (
             <>
               <div className="p-cardbar">
@@ -174,25 +196,64 @@ export function PortalShell({ children }: { children?: React.ReactNode }) {
                 </button>
               </div>
 
-              {railId === 'references' ? (
-                <ReferenceDoc />
-              ) : (
-                <div className="p-scroll">
-                  <div style={{ padding: '64px 34px', maxWidth: 620 }}>
-                    <h1 style={{ fontSize: 26, margin: 0, color: 'var(--text-hi)' }}>
-                      {RAIL.find((r) => r.id === railId)?.label}
-                    </h1>
-                    <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.6, color: 'var(--text-default)' }}>
-                      This page is coming soon. Open <strong>References</strong> to see an API
-                      page, or <strong>Customise</strong> to edit your portal.
-                    </p>
-                  </div>
-                </div>
-              )}
+              {page.body}
             </>
           )}
         </div>
       </div>
     </div>
   )
+}
+
+/* Each rail entry declares its tree (if any), whether the Version/Editor/
+   Publish bar sits on the content card, and the card's body. Tree widths are
+   per Figma board; References keeps the dvsh width. */
+function pageFor(railId: string, recipeId: string | null): {
+  tree?: React.ReactNode
+  treeW?: number
+  cardbar: boolean
+  body: React.ReactNode
+} {
+  switch (railId) {
+    case 'overview':
+      return { cardbar: false, body: <Overview /> }
+    case 'guides':
+      return { tree: <GuidesTree />, treeW: 320, cardbar: true, body: <GuideDoc /> }
+    case 'references':
+      return { tree: <TreeSidebar />, cardbar: true, body: <ReferenceDoc /> }
+    case 'recipes':
+      return recipeId
+        ? { tree: <RecipeTree />, treeW: 320, cardbar: false, body: <RecipesPage /> }
+        : { cardbar: false, body: <RecipesPage /> }
+    case 'api-access':
+      return { tree: <AccessTree />, treeW: 200, cardbar: false, body: <AccessPage /> }
+    case 'apps':
+      return { tree: <AppsTree />, treeW: 200, cardbar: false, body: <AppsRailPage /> }
+    case 'billing':
+      return { tree: <BillingTree />, treeW: 240, cardbar: false, body: <BillingPage /> }
+    case 'monetisation':
+      return { tree: <MonTree />, treeW: 200, cardbar: false, body: <MonetisationPage /> }
+    case 'organisation':
+      return { tree: <OrgTree />, treeW: 200, cardbar: false, body: <OrganisationPage /> }
+    case 'categories':
+      return { tree: <CategoriesTree />, treeW: 280, cardbar: false, body: <CategoriesPage /> }
+    default:
+      return {
+        tree: <TreeSidebar />,
+        cardbar: true,
+        body: (
+          <div className="p-scroll">
+            <div style={{ padding: '64px 34px', maxWidth: 620 }}>
+              <h1 style={{ fontSize: 26, margin: 0, color: 'var(--text-hi)' }}>
+                {RAIL.find((r) => r.id === railId)?.label}
+              </h1>
+              <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.6, color: 'var(--text-default)' }}>
+                This page is coming soon. Open <strong>References</strong> to see an API
+                page, or <strong>Customise</strong> to edit your portal.
+              </p>
+            </div>
+          </div>
+        ),
+      }
+  }
 }
