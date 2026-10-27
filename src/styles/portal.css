@@ -11,7 +11,7 @@
    ========================================================================== */
 
 .portal {
-  --rail-w: 74px;
+  --rail-w: 84px;
   --tree-w: 286px;
   --topbar-h: 48px;
   --page-gap: 10px;
@@ -30,7 +30,6 @@
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
 }
-.portal[data-mode='builder'] { grid-template-rows: minmax(0, 1fr); }
 .portal * { box-sizing: border-box; }
 
 /* Reset the portal's OWN controls only, and at zero specificity.
@@ -162,36 +161,40 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 4px 0 12px;
+  gap: 6px;
+  padding: 4px 4px 6px;
   overflow-y: auto;
   min-height: 0;
 }
 .p-rail::-webkit-scrollbar { width: 0; }
 
+/* Figma "Menu con": 76×58, radius 8, 18px icon, label 11/16 regular. */
 .p-rail-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 56px;
-  padding: 9px 2px 7px;
-  border-radius: 10px;
+  gap: 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 76px;
+  height: 58px;
+  padding: 9px 0;
+  border-radius: 8px;
   color: var(--chrome-dim);
   transition: background 120ms ease, color 120ms ease;
 }
+.p-rail-item svg { color: color-mix(in oklab, var(--chrome-fg) 70%, var(--chrome-dim)); }
 .p-rail-item:hover { background: var(--chrome-hover); color: var(--chrome-fg); }
-.p-rail-item[aria-current='page'] {
-  background: var(--chrome-active-bg);
-  color: var(--chrome-active-fg);
-}
+.p-rail-item[aria-current='page'] { background: var(--chrome-active-bg); color: var(--chrome-fg); }
+.p-rail-item[aria-current='page'] svg { color: var(--chrome-active-fg); }
 .p-rail-label {
   font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  line-height: 1.1;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
   text-align: center;
+  white-space: nowrap;
 }
 .p-rail-spacer { flex: 1; }
 
@@ -279,6 +282,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  text-align: left;
   padding: 14px 8px 6px;
   font-size: 12px;
   font-weight: 700;
@@ -342,6 +346,7 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 .p-body[data-cols='content'] .p-content { margin-left: var(--page-gap); }
+.p-content.is-page { grid-template-rows: minmax(0, 1fr); }
 
 /* The card's own toolbar: version chip, Editor/Preview, publish. */
 .p-cardbar {
@@ -414,14 +419,13 @@
   background-clip: content-box;
 }
 
-/* Builder mode is full-bleed: the builder paints its own neutral ground and
-   insets the canvas itself, so the card's gap, border and radius step aside. */
-.p-body .p-content.is-builder {
-  grid-template-rows: minmax(0, 1fr);
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-}
-.p-body[data-cols='rail-content'] .p-content.is-builder { border-left: 1px solid var(--chrome-line); }
+/* Builder mode sits in the same card as every other module, under the same
+   top bar; the builder owns the card's whole height. */
+.p-body .p-content.is-builder { grid-template-rows: minmax(0, 1fr); }
+.portal[data-full] { grid-template-rows: minmax(0, 1fr); }
+.portal[data-full] .p-content.is-builder { margin: 0; border: 0; border-radius: 0; }
 
 .portal[data-appearance='dark'] { color-scheme: dark; }
+
+/* With a secondary nav (docs tree) beside it, the rail gets a right stroke. */
+.p-body[data-cols='rail-tree-content'] .p-rail { border-right: 1px solid var(--chrome-line); }

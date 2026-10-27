@@ -146,6 +146,20 @@ interface State {
   railId: string
   /** Which endpoint the reference page is showing. */
   endpointId: string
+  /** Recipes rail: null shows the list, otherwise that recipe's detail page. */
+  recipeId: string | null
+  /** Organisation rail: which Manage Teams page is open. */
+  orgTab: 'team' | 'roles' | 'partners' | 'companies'
+  accessTab: 'gateways' | 'products'
+  billingTab: 'plans' | 'invoices'
+  /** Monetisation rail: which list is open, and the record opened from it
+      (null shows the list). */
+  monTab: 'apps' | 'packages' | 'products' | 'invoices'
+  monId: string | null
+  /** Which way the last Monetisation move went, for the page transition. */
+  monDir: 'deeper' | 'back' | 'switch'
+  /** Apps rail: the consumer's apps, or the provider's approval queue. */
+  appsView: 'mine' | 'approvals'
   pageId: PageId
   /** Which level the left panel is showing. Section drill-down is driven by
       `selection`; 'theme' and 'typography' are the branches that aren't sections. */
@@ -256,6 +270,14 @@ let state: State = {
   navOpen: true,
   railId: 'references',
   endpointId: 'cancel-payment',
+  recipeId: null,
+  orgTab: 'team',
+  accessTab: 'gateways',
+  billingTab: 'plans',
+  monTab: 'packages',
+  monId: null,
+  monDir: 'switch',
+  appsView: 'mine',
   pageId: 'home',
   panel: 'root',
   selection: null,
@@ -451,10 +473,37 @@ export const actions = {
       actions.openBuilder()
       return
     }
-    patch({ appMode: 'portal', railId, navOpen: true })
+    // Each rail item opens on its own list, never on a record left from a
+    // cross-link.
+    const mon = railId === 'apps' ? { monTab: 'apps' as const, monId: null } : railId === 'monetisation' && state.monTab === 'apps' ? { monTab: 'packages' as const, monId: null } : {}
+    patch({ appMode: 'portal', railId, navOpen: true, ...mon })
   },
   toggleNav() {
     patch({ navOpen: !state.navOpen })
+  },
+  setAccessTab(accessTab: State['accessTab']) {
+    patch({ accessTab })
+  },
+  setBillingTab(billingTab: State['billingTab']) {
+    patch({ billingTab })
+  },
+  setOrgTab(orgTab: State['orgTab']) {
+    patch({ orgTab })
+  },
+  /** Open a Monetisation list, or one record in it. Cross-links (a product
+      from a package) jump tabs, so both move together. */
+  openMon(monTab: State['monTab'], monId: string | null = null) {
+    const monDir = monId && !state.monId ? 'deeper' : !monId && state.monId && state.monTab === monTab ? 'back' : 'switch'
+    // Apps live under their own rail item; the rest under Monetisation.
+    const railId = monTab === 'apps' ? 'apps' : 'monetisation'
+    patch({ appMode: 'portal', railId, monTab, monId, monDir, ...(monTab === 'apps' ? { appsView: 'mine' as const } : {}) })
+  },
+  setAppsView(appsView: State['appsView']) {
+    if (appsView === 'mine') actions.openMon('apps')
+    else patch({ appsView })
+  },
+  setRecipe(recipeId: string | null) {
+    patch({ recipeId })
   },
   setEndpoint(endpointId: string) {
     patch({ endpointId })
